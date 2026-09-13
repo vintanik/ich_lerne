@@ -34,6 +34,15 @@ export function LernenRoute({ sets, karten, startBereich, onAntwort, onFertig }:
     return gestarteteKarten(karten.filter((k) => k.setId === bereich.setId));
   }
 
+  // Für die Fortschrittsleiste im Trainer: bei "box" bewusst das GANZE Set
+  // (alle Boxen), nicht nur die geübte Box — sonst sähen die übrigen vier
+  // Boxen leer aus, und Karten, die während der Runde die Box wechseln,
+  // würden aus der Anzeige verschwinden statt in ihrer neuen Box aufzutauchen.
+  function kartenFuerUebersicht(bereich: LernBereich): Karte[] {
+    if (bereich.typ === "box") return gestarteteKarten(karten.filter((k) => k.setId === bereich.setId));
+    return kartenFuerBereich(bereich);
+  }
+
   function bereichLabel(bereich: LernBereich): string {
     if (bereich.typ === "alle-faellig") return "Alle fälligen Karten";
     if (bereich.typ === "aktiv") return "Daran arbeite ich";
@@ -158,7 +167,7 @@ export function LernenRoute({ sets, karten, startBereich, onAntwort, onFertig }:
       <LernModus
         key={`runde-${phase.nr}`}
         karten={phase.karten}
-        scopeKarten={kartenFuerBereich(phase.bereich)}
+        scopeKarten={kartenFuerUebersicht(phase.bereich)}
         scopeLabel={bereichLabel(phase.bereich)}
         onBewertung={(karte, richtig) => onAntwort(karte.id, richtig)}
         onKomplett={(bewertungen) =>
