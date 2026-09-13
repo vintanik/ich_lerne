@@ -496,6 +496,20 @@ input[type="checkbox"] {
   border-right: none;
 }
 
+/* Voll eingefärbt bei gezieltem Box-Üben — macht sofort sichtbar, welche
+   Box gerade drankommt. */
+.trainer-leiste-seg.aktiv {
+  border-radius: 3px 3px 0 0;
+  box-shadow: 0 1px 3px rgba(43, 38, 34, 0.35);
+  position: relative;
+  z-index: 1;
+}
+
+.trainer-leiste-seg.aktiv .trainer-leiste-label {
+  opacity: 0.85;
+  font-weight: 700;
+}
+
 .trainer-leiste-label {
   font-size: 0.68rem;
   letter-spacing: 0.02em;

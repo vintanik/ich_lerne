@@ -78,7 +78,7 @@ export function naechsteWiederholungFuerBox(box: BoxNummer, abIso: string = heut
 
 /**
  * Leitner-Kern: "richtig" schiebt eine Box weiter (max. Box 5),
- * "falsch" wirft zurück auf Box 1. Gibt die neuen Feldwerte zurück,
+ * "falsch" eine Box zurück (mind. Box 1). Gibt die neuen Feldwerte zurück,
  * ohne die Karte zu mutieren.
  */
 export function nachAntwort(
@@ -86,7 +86,9 @@ export function nachAntwort(
   richtig: boolean,
   heute: string = heuteIso(),
 ): { box: BoxNummer; naechsteWiederholung: string } {
-  const neueBox: BoxNummer = richtig ? (Math.min(karte.box + 1, MAX_BOX) as BoxNummer) : 1;
+  const neueBox: BoxNummer = richtig
+    ? (Math.min(karte.box + 1, MAX_BOX) as BoxNummer)
+    : (Math.max(karte.box - 1, 1) as BoxNummer);
   return { box: neueBox, naechsteWiederholung: naechsteWiederholungFuerBox(neueBox, heute) };
 }
 

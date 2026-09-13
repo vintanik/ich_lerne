@@ -169,6 +169,7 @@ export function LernenRoute({ sets, karten, startBereich, onAntwort, onFertig }:
         karten={phase.karten}
         scopeKarten={kartenFuerUebersicht(phase.bereich)}
         scopeLabel={bereichLabel(phase.bereich)}
+        aktiveBox={phase.bereich.typ === "box" ? phase.bereich.box : undefined}
         onBewertung={(karte, richtig) => onAntwort(karte.id, richtig)}
         onKomplett={(bewertungen) =>
           setPhase({

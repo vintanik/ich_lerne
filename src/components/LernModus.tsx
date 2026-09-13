@@ -14,6 +14,8 @@ interface Props {
   scopeKarten: Karte[];
   /** z. B. "Französisch Lektion 3 / Karten 1–15". */
   scopeLabel: string;
+  /** Bei gezieltem Box-Üben: welche Box hervorgehoben werden soll. */
+  aktiveBox?: BoxNummer;
   /** pro Karte sofort, für die optimistische Box-Aktualisierung */
   onBewertung: (karte: Karte, richtig: boolean) => void;
   /** am Ende, mit allen Bewertungen der Runde */
@@ -29,7 +31,17 @@ const BOX_FARBE: Record<BoxNummer, string> = {
   5: "var(--box-5)",
 };
 
-export function LernModus({ karten, scopeKarten, scopeLabel, onBewertung, onKomplett, onAbbrechen }: Props) {
+// Textfarbe auf voll eingefärbtem Box-Hintergrund — je nach Helligkeit der
+// jeweiligen Box-Farbe hell oder dunkel, damit es lesbar bleibt.
+const BOX_TEXT_AUF_FARBE: Record<BoxNummer, string> = {
+  1: "var(--paper-light)",
+  2: "var(--paper-light)",
+  3: "var(--border-dark)",
+  4: "var(--border-dark)",
+  5: "var(--paper-light)",
+};
+
+export function LernModus({ karten, scopeKarten, scopeLabel, aktiveBox, onBewertung, onKomplett, onAbbrechen }: Props) {
   const gesamt = karten.length;
   const [queue, setQueue] = useState<Karte[]>(karten);
   const [erledigt, setErledigt] = useState(0);
@@ -66,13 +78,24 @@ export function LernModus({ karten, scopeKarten, scopeLabel, onBewertung, onKomp
       <div className="trainer-leiste">
         {ALLE_BOXEN.map((b) => {
           const anteil = scopeGesamt > 0 ? (verteilung[b] / scopeGesamt) * 100 : 0;
+          const istAktiv = b === aktiveBox;
           return (
-            <div className="trainer-leiste-seg" key={b} style={{ borderTopColor: BOX_FARBE[b] }}>
+            <div
+              className={`trainer-leiste-seg${istAktiv ? " aktiv" : ""}`}
+              key={b}
+              style={{
+                borderTopColor: BOX_FARBE[b],
+                background: istAktiv ? BOX_FARBE[b] : undefined,
+                color: istAktiv ? BOX_TEXT_AUF_FARBE[b] : undefined,
+              }}
+            >
               <span className="trainer-leiste-label">Box {b}</span>
               <span className="trainer-leiste-zahl">{verteilung[b]}</span>
-              <span className="trainer-leiste-anteil" aria-hidden>
-                <span style={{ width: `${anteil}%`, background: BOX_FARBE[b] }} />
-              </span>
+              {!istAktiv && (
+                <span className="trainer-leiste-anteil" aria-hidden>
+                  <span style={{ width: `${anteil}%`, background: BOX_FARBE[b] }} />
+                </span>
+              )}
             </div>
           );
         })}

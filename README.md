@@ -12,7 +12,7 @@ lernt sie nach dem Leitner-Boxen-Prinzip ein.
 
 - **Box 1** täglich fällig → **Box 2** alle 2 Tage → **Box 3** alle 4 Tage →
   **Box 4** wöchentlich → **Box 5** alle 2 Wochen
-- Richtig → eine Box weiter (max. 5). Falsch → zurück auf Box 1.
+- Richtig → eine Box weiter (max. 5). Falsch → eine Box zurück (mind. 1).
 
 Die Box-Intervalle stehen zentral in [`src/leitner.ts`](src/leitner.ts)
 (`BOX_INTERVALL_TAGE`) und lassen sich dort anpassen.
