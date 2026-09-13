@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { heuteIso } from "../leitner";
+import { supabase } from "../supabaseClient";
 import type { Hintergrund } from "../storage";
 import type { DatenBestand } from "../types";
 import { ConfirmDialog } from "./ConfirmDialog";
@@ -87,6 +88,19 @@ export function EinstellungenRoute({
 
       <h2>Einstellungen</h2>
 
+      <div className="card accent-salbei">
+        <h3>Konto</h3>
+        <div className="btn-row">
+          <button className="btn salbei secondary" onClick={() => supabase.auth.signOut()}>
+            Abmelden
+          </button>
+        </div>
+      </div>
+
+      <div className="ornament">
+        <span className="dot" />
+      </div>
+
       <h3>Darstellung</h3>
       <div className="tag-row">
         <button
@@ -109,13 +123,13 @@ export function EinstellungenRoute({
 
       <h3>Backup</h3>
       <p className="note">
-        Ohne Konto bleiben alle Karten nur auf diesem Gerät. Für einen Gerätewechsel: hier als Datei
-        sichern und drüben wieder einlesen.
+        Deine Karten liegen in deinem Konto und sind auf allen Geräten synchron. Ein Backup ist trotzdem
+        sinnvoll als zusätzliche Sicherung.
       </p>
 
       <div className="card accent-salbei">
         <h3>Backup speichern</h3>
-        <p>Lädt eine JSON-Datei mit allen Sets, Gruppen und Karten herunter.</p>
+        <p>Lädt eine JSON-Datei mit allen deinen Sets und Karten herunter.</p>
         <div className="btn-row">
           <button className="btn salbei" onClick={backupSpeichern} disabled={exportiert}>
             {exportiert ? "Erstellt…" : "Backup speichern"}
@@ -125,7 +139,7 @@ export function EinstellungenRoute({
 
       <div className="card accent-bordeaux" style={{ marginTop: "1.25rem" }}>
         <h3>Backup wiederherstellen</h3>
-        <p className="note">Achtung: ersetzt alle aktuell gespeicherten Karten auf diesem Gerät.</p>
+        <p className="note">Achtung: ersetzt alle aktuell gespeicherten Karten in deinem Konto.</p>
         <div className="btn-row">
           <button className="btn" onClick={() => fileInputRef.current?.click()}>
             Datei auswählen
@@ -156,9 +170,7 @@ export function EinstellungenRoute({
       <div className="ornament">
         <span className="dot" />
       </div>
-      <p className="note">
-        „Ich lerne“ — vorläufiger Projektname. Version 0.1, lokale Daten (IndexedDB), kein Konto.
-      </p>
+      <p className="note">„Ich lerne“ — vorläufiger Projektname.</p>
     </div>
   );
 }

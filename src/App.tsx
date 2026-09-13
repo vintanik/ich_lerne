@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { usePasswortWiederherstellung } from "./auth/usePasswortWiederherstellung";
+import { useSession } from "./auth/useSession";
+import { hatLokaleDaten } from "./cloudMigration";
 import { baueKarten, baueNeuesSet, heuteIso, karteStarten, nachAntwort } from "./leitner";
 import {
   exportiereBackup,
@@ -11,7 +14,9 @@ import {
   setBundleSpeichern,
   setHintergrund as speichereHintergrund,
   setLoeschen,
+  setMigrationAngeboten,
   setSpeichern,
+  wurdeMigrationAngeboten,
   type Hintergrund,
 } from "./storage";
 import type { DatenBestand, Karte, KartePaar, KartenSet, LernBereich, SetEingabe } from "./types";
@@ -20,15 +25,27 @@ import { DaranArbeiteIchRoute } from "./components/DaranArbeiteIchRoute";
 import { EinstellungenRoute } from "./components/EinstellungenRoute";
 import { FehlerBanner } from "./components/FehlerBanner";
 import { LernenRoute } from "./components/LernenRoute";
+import { LoginScreen } from "./components/LoginScreen";
+import { MigrationAngebot } from "./components/MigrationAngebot";
+import { PasswortZuruecksetzenScreen } from "./components/PasswortZuruecksetzenScreen";
 
 type Ansicht = "arbeit" | "bibliothek" | "lernen" | "einstellungen";
 
 function App() {
+  const { session, laedt } = useSession();
+  // Siehe "Ich koche": onAuthStateChange liefert beim Tab-Wechsel auch für
+  // dieselbe Person ein neues Session-Objekt (blosser Token-Refresh) — die
+  // Lade-Gate-Effekte hängen deshalb bewusst an dieser stabilen id statt am
+  // ganzen session-Objekt.
+  const userId = session?.user.id;
+  const { istWiederherstellung, abschliessen: wiederherstellungAbschliessen } = usePasswortWiederherstellung();
+
   const [sets, setSets] = useState<KartenSet[]>([]);
   const [karten, setKarten] = useState<Karte[]>([]);
   const [datenZustand, setDatenZustand] = useState<"laedt" | "bereit" | "fehler">("laedt");
   const [ladeVersuch, setLadeVersuch] = useState(0);
   const [fehlermeldung, setFehlermeldung] = useState<string | null>(null);
+  const [zeigeMigrationsAngebot, setZeigeMigrationsAngebot] = useState(false);
 
   const [ansicht, setAnsicht] = useState<Ansicht>("arbeit");
   const [lernBereich, setLernBereich] = useState<LernBereich | null>(null);
@@ -38,7 +55,10 @@ function App() {
     document.body.dataset.hintergrund = hintergrund;
   }, [hintergrund]);
 
+  // Gemeinsames Lade-Gate direkt nach dem Login — solange es läuft, rendert
+  // die eigentliche App noch nicht.
   useEffect(() => {
+    if (!userId) return;
     let abgebrochen = false;
     setDatenZustand("laedt");
     ladeBestand()
@@ -54,7 +74,23 @@ function App() {
     return () => {
       abgebrochen = true;
     };
-  }, [ladeVersuch]);
+  }, [userId, ladeVersuch]);
+
+  // Einmalig pro Browser prüfen, ob lokale IndexedDB-Altdaten (von vor der
+  // Cloud-Umstellung) übernommen werden sollen.
+  useEffect(() => {
+    if (!userId) return;
+    if (wurdeMigrationAngeboten()) return;
+    let abgebrochen = false;
+    hatLokaleDaten().then((hat) => {
+      if (abgebrochen) return;
+      if (hat) setZeigeMigrationsAngebot(true);
+      else setMigrationAngeboten();
+    });
+    return () => {
+      abgebrochen = true;
+    };
+  }, [userId]);
 
   // Optimistisches Schreibmuster (wie "Ich koche"): State sofort ändern,
   // im Hintergrund persistieren, bei Fehler zurückrollen + ein Banner.
@@ -119,7 +155,7 @@ function App() {
         setSets((s) => s.filter((x) => x.id !== setId));
         setKarten((k) => k.filter((x) => x.setId !== setId));
       },
-      () => setLoeschen(set, vorherKarten),
+      () => setLoeschen(set),
       () => {
         setSets(vorherSets);
         setKarten(vorherKarten);
@@ -245,6 +281,25 @@ function App() {
     setAnsicht("arbeit");
   }
 
+  // Kurzer Ladezustand beim Start, bis eine evtl. vorhandene Sitzung geprüft
+  // ist — verhindert ein Aufblitzen des Login-Screens für angemeldete Leute.
+  if (laedt) {
+    return (
+      <div className="app-shell">
+        <Kopf />
+        <p className="note">Lädt…</p>
+      </div>
+    );
+  }
+
+  if (istWiederherstellung) {
+    return <PasswortZuruecksetzenScreen onFertig={wiederherstellungAbschliessen} />;
+  }
+
+  if (!session) {
+    return <LoginScreen />;
+  }
+
   if (datenZustand !== "bereit") {
     return (
       <div className="app-shell">
@@ -253,7 +308,7 @@ function App() {
           <p className="note">Lädt deine Karten…</p>
         ) : (
           <div className="card accent-bordeaux">
-            <p>Deine Daten konnten nicht geladen werden.</p>
+            <p>Deine Daten konnten nicht geladen werden — vielleicht keine Internetverbindung?</p>
             <div className="btn-row">
               <button className="btn" onClick={() => setLadeVersuch((v) => v + 1)}>
                 Erneut versuchen
@@ -273,6 +328,16 @@ function App() {
         <div style={{ marginBottom: "1.25rem" }}>
           <FehlerBanner meldung={fehlermeldung} onSchliessen={() => setFehlermeldung(null)} />
         </div>
+      )}
+
+      {zeigeMigrationsAngebot && (
+        <MigrationAngebot
+          userId={session.user.id}
+          onFertig={() => {
+            setZeigeMigrationsAngebot(false);
+            setLadeVersuch((v) => v + 1);
+          }}
+        />
       )}
 
       <nav className="nav">

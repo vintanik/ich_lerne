@@ -10,6 +10,9 @@ dist
 dist-ssr
 *.local
 
+# Supabase-Zugangsdaten: nur .env.example wird eingecheckt
+.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
