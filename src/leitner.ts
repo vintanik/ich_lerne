@@ -111,12 +111,6 @@ export function anzahlFaellig(karten: Karte[], heute: string = heuteIso()): numb
   return karten.filter((k) => istFaellig(k, heute)).length;
 }
 
-/** Gestartete Karten aus Sets, die als "daran arbeite ich" markiert sind. */
-export function aktiveKarten(karten: Karte[], sets: KartenSet[]): Karte[] {
-  const aktiveSetIds = new Set(sets.filter((s) => s.aktiv).map((s) => s.id));
-  return karten.filter((k) => aktiveSetIds.has(k.setId) && istGestartet(k));
-}
-
 // --- Reihenfolge & Vorrat ---------------------------------------------
 
 /** Stabile Sortierung eines Karten-Sets: sortIndex, dann Erstelldatum, dann id. */

@@ -21,7 +21,6 @@ import {
 } from "./storage";
 import type { DatenBestand, Karte, KartePaar, KartenSet, LernBereich, SetEingabe } from "./types";
 import { BibliothekRoute } from "./components/BibliothekRoute";
-import { DaranArbeiteIchRoute } from "./components/DaranArbeiteIchRoute";
 import { EinstellungenRoute } from "./components/EinstellungenRoute";
 import { FehlerBanner } from "./components/FehlerBanner";
 import { LernenRoute } from "./components/LernenRoute";
@@ -29,7 +28,7 @@ import { LoginScreen } from "./components/LoginScreen";
 import { MigrationAngebot } from "./components/MigrationAngebot";
 import { PasswortZuruecksetzenScreen } from "./components/PasswortZuruecksetzenScreen";
 
-type Ansicht = "arbeit" | "bibliothek" | "lernen" | "einstellungen";
+type Ansicht = "bibliothek" | "lernen" | "einstellungen";
 
 function App() {
   const { session, laedt } = useSession();
@@ -47,7 +46,7 @@ function App() {
   const [fehlermeldung, setFehlermeldung] = useState<string | null>(null);
   const [zeigeMigrationsAngebot, setZeigeMigrationsAngebot] = useState(false);
 
-  const [ansicht, setAnsicht] = useState<Ansicht>("arbeit");
+  const [ansicht, setAnsicht] = useState<Ansicht>("bibliothek");
   const [lernBereich, setLernBereich] = useState<LernBereich | null>(null);
   const [hintergrund, setHintergrundState] = useState<Hintergrund>(getHintergrund());
 
@@ -278,7 +277,7 @@ function App() {
   function backupUebernehmen(bestand: DatenBestand) {
     setSets(bestand.sets);
     setKarten(bestand.karten);
-    setAnsicht("arbeit");
+    setAnsicht("bibliothek");
   }
 
   // Kurzer Ladezustand beim Start, bis eine evtl. vorhandene Sitzung geprüft
@@ -340,19 +339,7 @@ function App() {
         />
       )}
 
-      <nav className="nav">
-        <button
-          className={ansicht === "arbeit" || ansicht === "lernen" ? "active" : ""}
-          onClick={() => setAnsicht("arbeit")}
-        >
-          Daran arbeite ich
-        </button>
-        <button className={ansicht === "bibliothek" ? "active" : ""} onClick={() => setAnsicht("bibliothek")}>
-          Bibliothek
-        </button>
-      </nav>
-
-      <div className="btn-row" style={{ justifyContent: "center", marginTop: "-0.25rem" }}>
+      <div className="btn-row" style={{ justifyContent: "center" }}>
         <button className="link-btn" onClick={() => setAnsicht("einstellungen")}>
           ⚙ Einstellungen
         </button>
@@ -361,15 +348,6 @@ function App() {
       <div className="ornament">
         <span className="dot" />
       </div>
-
-      {ansicht === "arbeit" && (
-        <DaranArbeiteIchRoute
-          sets={sets}
-          karten={karten}
-          onLernen={lernenStarten}
-          onZuBibliothek={() => setAnsicht("bibliothek")}
-        />
-      )}
 
       {ansicht === "bibliothek" && (
         <BibliothekRoute
@@ -387,13 +365,13 @@ function App() {
         />
       )}
 
-      {ansicht === "lernen" && (
+      {ansicht === "lernen" && lernBereich && (
         <LernenRoute
           sets={sets}
           karten={karten}
           startBereich={lernBereich}
           onAntwort={lernAntwort}
-          onFertig={() => setAnsicht("arbeit")}
+          onFertig={() => setAnsicht("bibliothek")}
         />
       )}
 
@@ -404,7 +382,7 @@ function App() {
           onExport={exportiereBackup}
           onImport={importiereBackup}
           onImportUebernommen={backupUebernehmen}
-          onZurueck={() => setAnsicht("arbeit")}
+          onZurueck={() => setAnsicht("bibliothek")}
         />
       )}
     </div>

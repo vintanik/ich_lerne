@@ -11,7 +11,6 @@ interface Props {
   onZurueck: () => void;
   onUmbenennen: (name: string) => void;
   onLoeschen: () => void;
-  onAktivSetzen: (aktiv: boolean) => void;
   onWoerterStarten: (karteIds: string[]) => void;
   onVerwalten: () => void;
   onLernen: () => void;
@@ -24,7 +23,6 @@ export function SetUebeSeite({
   onZurueck,
   onUmbenennen,
   onLoeschen,
-  onAktivSetzen,
   onWoerterStarten,
   onVerwalten,
   onLernen,
@@ -132,25 +130,6 @@ export function SetUebeSeite({
       </div>
 
       <NeueWoerterPanel vorrat={vorrat} onStarten={onWoerterStarten} />
-
-      <div className="card">
-        <div className="zeile-zwischen">
-          <div style={{ flex: 1 }}>
-            <strong>Daran arbeite ich</strong>
-            <p className="note" style={{ margin: 0 }}>
-              {set.aktiv
-                ? "Dieses Set erscheint im Trainer-Bereich."
-                : "Aktivieren, damit dieses Set im Trainer-Bereich auftaucht."}
-            </p>
-          </div>
-          <button
-            className={`btn klein${set.aktiv ? " salbei secondary" : " salbei"}`}
-            onClick={() => onAktivSetzen(!set.aktiv)}
-          >
-            {set.aktiv ? "Entfernen" : "Aktivieren"}
-          </button>
-        </div>
-      </div>
 
       <div className="ornament">
         <span className="dot" />

@@ -17,18 +17,17 @@ const KEYS = {
 interface SetZeile {
   id: string;
   name: string;
-  aktiv: boolean;
   erstellt_am: string;
 }
 
 function zeileZuSet(z: SetZeile): KartenSet {
-  return { id: z.id, name: z.name, aktiv: z.aktiv, erstelltAm: z.erstellt_am };
+  return { id: z.id, name: z.name, erstelltAm: z.erstellt_am };
 }
 
-const SET_SELECT = "id, name, aktiv, erstellt_am";
+const SET_SELECT = "id, name, erstellt_am";
 
 export async function setSpeichern(set: KartenSet): Promise<void> {
-  const { error } = await supabase.from("sets").update({ name: set.name, aktiv: set.aktiv ?? false }).eq("id", set.id);
+  const { error } = await supabase.from("sets").update({ name: set.name }).eq("id", set.id);
   if (error) throw error;
 }
 
@@ -36,7 +35,7 @@ export async function setSpeichern(set: KartenSet): Promise<void> {
 export async function setBundleSpeichern(set: KartenSet, karten: Karte[]): Promise<void> {
   const { error: setError } = await supabase
     .from("sets")
-    .insert({ id: set.id, name: set.name, aktiv: set.aktiv ?? false, erstellt_am: set.erstelltAm });
+    .insert({ id: set.id, name: set.name, erstellt_am: set.erstelltAm });
   if (setError) throw setError;
   if (karten.length > 0) {
     const { error: kartenError } = await supabase.from("karten").insert(karten.map(karteZuZeile));

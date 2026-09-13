@@ -132,7 +132,6 @@ export function BibliothekRoute(props: Props) {
           props.onSetLoeschen(set.id);
           setView({ typ: "liste" });
         }}
-        onAktivSetzen={(aktiv) => props.onSetAktualisieren(set.id, { aktiv })}
         onWoerterStarten={props.onWoerterStarten}
         onVerwalten={() => setView({ typ: "verwalten", setId: set.id })}
         onLernen={() => props.onLernen({ typ: "set", setId: set.id })}
@@ -161,10 +160,7 @@ export function BibliothekRoute(props: Props) {
           return (
             <button className="listenzeile" key={set.id} onClick={() => setView({ typ: "uebe", setId: set.id })}>
               <div className="stapel" style={{ flex: 1 }}>
-                <span className="listenzeile-titel">
-                  {set.name}
-                  {set.aktiv && <span className="mini-box-marke aktiv-marke"> aktiv</span>}
-                </span>
+                <span className="listenzeile-titel">{set.name}</span>
                 <span className="note" style={{ margin: 0 }}>
                   {gestartet.length} im Lernen · {vorrat} im Vorrat · {anzahlFaellig(sKarten)} fällig
                 </span>

@@ -8,11 +8,6 @@ export interface KartenSet {
   id: string;
   name: string;
   erstelltAm: string;
-  /**
-   * In der Bibliothek als "daran arbeite ich" markiert. Der Trainer-Bereich
-   * zeigt und übt nur aktive Sets. Fehlt bei Altdaten → wie false.
-   */
-  aktiv?: boolean;
 }
 
 export interface Karte {
@@ -53,11 +48,7 @@ export interface LernErgebnis {
 }
 
 /** Auswahl, welche Karten eine Lernrunde umfasst. */
-export type LernBereich =
-  | { typ: "alle-faellig" }
-  | { typ: "aktiv" }
-  | { typ: "set"; setId: string }
-  | { typ: "box"; setId: string; box: BoxNummer };
+export type LernBereich = { typ: "set"; setId: string } | { typ: "box"; setId: string; box: BoxNummer };
 
 /** Kompletter Datenbestand — Grundlage für Laden und Backup. */
 export interface DatenBestand {

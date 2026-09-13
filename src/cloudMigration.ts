@@ -25,7 +25,6 @@ export async function uebertrageLokaleDatenInsKonto(userId: string): Promise<voi
     id: s.id,
     user_id: userId,
     name: s.name,
-    aktiv: s.aktiv ?? false,
     erstellt_am: s.erstelltAm,
   }));
   if (setZeilen.length > 0) {

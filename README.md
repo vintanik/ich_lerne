@@ -17,13 +17,14 @@ lernt sie nach dem Leitner-Boxen-Prinzip ein.
 Die Box-Intervalle stehen zentral in [`src/leitner.ts`](src/leitner.ts)
 (`BOX_INTERVALL_TAGE`) und lassen sich dort anpassen.
 
-## Zwei Bereiche
+## Bibliothek
 
-- **Bibliothek** — alle Sets verwalten. Ein Set öffnen führt auf die Übe-Startseite:
-  Box-Übersicht, „Üben", „Neue Wörter ins Lernen holen", „Karten verwalten".
-- **Daran arbeite ich** — Trainer. Zeigt nur Sets, die in der Bibliothek als „aktiv"
-  markiert sind; übt deren gestartete Karten (Fortschrittsleiste über die 5 Boxen,
-  Karte umdrehen + selbst „richtig/falsch", „überspringen").
+Einziger Einstiegspunkt: alle Sets verwalten. Ein Set öffnen führt direkt auf die
+Übe-Startseite — Box-Übersicht, „Üben" (fällige Karten), „Einzelne Box üben"
+(unabhängig von der Fälligkeit, für gezieltes Wiederholen), „Neue Wörter ins
+Lernen holen", „Karten verwalten". Der Trainer selbst (Fortschrittsleiste über
+die 5 Boxen, Karte umdrehen + selbst „richtig/falsch", „überspringen") wird
+von dort aus gestartet — kein separater "aktiv"-Schritt nötig.
 
 ## Technik
 
@@ -64,7 +65,7 @@ npm run lint
 
 ## Datenmodell
 
-Siehe [`src/types.ts`](src/types.ts): `KartenSet` (mit `aktiv?`) → `Karte`
+Siehe [`src/types.ts`](src/types.ts): `KartenSet` → `Karte`
 (mit `gestartet?`, `sortIndex?`, `box`, `naechsteWiederholung`, optionalem
 Base64-`bildBase64`). Karten ohne `gestartet`/`sortIndex` (Altdaten) gelten als
 gestartet — siehe `istGestartet` / `sortiereKarten`.

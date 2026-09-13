@@ -576,11 +576,6 @@ input[type="checkbox"] {
   margin-top: 1.25rem;
 }
 
-.aktiv-marke {
-  color: var(--salbei-tief);
-  margin-left: 0.5rem;
-  vertical-align: middle;
-}
 
 .lern-karte {
   border: 3px double var(--border-dark);
