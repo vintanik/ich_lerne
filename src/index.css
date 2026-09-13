@@ -1,0 +1,698 @@
+:root {
+  /* Farbwelt "Ich lerne" — Bordeaux/Salbei. Platzhalter-Werte aus der
+     Projektbeschreibung, hier zentral zum Feinjustieren. */
+  --bordeaux: #7a2e3a;
+  --salbei: #8a9a7e;
+  /* dunkleres Salbei für Text/Links/Labels — reines --salbei ist auf dem
+     Papierton zu kontrastarm für Fliesstext */
+  --salbei-tief: #566b4c;
+  --text: #3d3d3a;
+  --paper: #f1e3cc;
+  --paper-light: #f8f1e2;
+  --border-dark: #2b2622;
+
+  /* Leitner-Boxen 1–5: warm (Box 1, "muss noch") → kühl (Box 5, "sitzt").
+     Bewusst als eigene Variablen, damit die Skala leicht änderbar bleibt. */
+  --box-1: #7a2e3a;
+  --box-2: #a15a54;
+  --box-3: #c58b63;
+  --box-4: #9aa97f;
+  --box-5: #566b4c;
+
+  --font-title: "Fraunces", "Georgia", serif;
+  --font-body: "Karla", system-ui, sans-serif;
+
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--paper);
+  background-image: radial-gradient(rgba(43, 38, 34, 0.05) 1px, transparent 1px);
+  background-size: 3px 3px;
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.5;
+}
+
+/* Modern/clean-Variante: hellerer Grund, ohne Papier-Textur. */
+body[data-hintergrund="modern"] {
+  --paper: #f6f1ea;
+  --paper-light: #fdfbf6;
+  background-image: none;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-title);
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 0.4em;
+}
+
+h1 {
+  font-size: 2.2rem;
+}
+h2 {
+  font-size: 1.5rem;
+}
+h3 {
+  font-size: 1.15rem;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+a {
+  color: var(--salbei-tief);
+}
+
+.app-shell {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+.brand-header {
+  text-align: center;
+  margin-bottom: 1.25rem;
+}
+
+.brand-header .brand-name {
+  font-family: var(--font-title);
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.brand-header .brand-sub {
+  font-family: var(--font-body);
+  font-style: italic;
+  color: var(--salbei-tief);
+  font-size: 0.95rem;
+}
+
+/* Ornament-Trennlinie: Linie mit zentriertem Punkt */
+.ornament {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.5rem 0;
+  color: var(--bordeaux);
+}
+
+.ornament::before,
+.ornament::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, transparent, currentColor, transparent);
+  opacity: 0.6;
+}
+
+.ornament .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--bordeaux);
+}
+
+.ornament.salbei {
+  color: var(--salbei-tief);
+}
+.ornament.salbei .dot {
+  background: var(--salbei-tief);
+}
+
+/* Karte mit doppeltem Rahmen, gealtertes-Papier-Gefühl */
+.card {
+  background-color: var(--paper-light);
+  border: 3px double var(--border-dark);
+  border-radius: 4px;
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.card.accent-bordeaux {
+  border-color: var(--bordeaux);
+}
+.card.accent-salbei {
+  border-color: var(--salbei-tief);
+}
+
+/* Umrandete Tags/Chips, nicht gefüllt */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  border: 1.5px solid var(--bordeaux);
+  color: var(--bordeaux);
+  background: transparent;
+  border-radius: 999px;
+  padding: 0.15em 0.75em;
+  font-size: 0.78rem;
+  font-family: var(--font-body);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.tag.salbei {
+  border-color: var(--salbei-tief);
+  color: var(--salbei-tief);
+}
+
+.tag.selected {
+  background: var(--bordeaux);
+  color: var(--paper-light);
+}
+
+.tag.salbei.selected {
+  background: var(--salbei-tief);
+  color: var(--paper-light);
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.note {
+  font-style: italic;
+  color: var(--text);
+  opacity: 0.75;
+  font-size: 0.9rem;
+}
+
+/* Buttons */
+.btn {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.7em 1.5em;
+  border-radius: 2px;
+  cursor: pointer;
+  border: 2px solid var(--bordeaux);
+  background: var(--bordeaux);
+  color: var(--paper-light);
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  opacity: 0.92;
+}
+.btn:active {
+  transform: translateY(0);
+}
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.secondary {
+  background: transparent;
+  color: var(--bordeaux);
+}
+
+.btn.salbei {
+  border-color: var(--salbei-tief);
+  background: var(--salbei-tief);
+}
+
+.btn.salbei.secondary {
+  background: transparent;
+  color: var(--salbei-tief);
+}
+
+.btn.block {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.btn.klein {
+  font-size: 0.8rem;
+  padding: 0.4em 0.9em;
+}
+
+.btn-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* Formular-Elemente */
+label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--salbei-tief);
+  margin-bottom: 0.3rem;
+}
+
+.field {
+  margin-bottom: 1.1rem;
+}
+
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  color: var(--text);
+  background: var(--paper-light);
+  border: 1.5px solid var(--border-dark);
+  border-radius: 2px;
+  padding: 0.55em 0.7em;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 4.5em;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: 2px solid var(--salbei-tief);
+  outline-offset: 1px;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--bordeaux);
+  width: auto;
+}
+
+/* Navigation */
+.nav {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.nav button {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text);
+  opacity: 0.6;
+  padding: 0.4em 0.2em;
+  cursor: pointer;
+}
+
+.nav button.active {
+  opacity: 1;
+  color: var(--bordeaux);
+  border-bottom-color: var(--bordeaux);
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: var(--font-body);
+  color: var(--salbei-tief);
+  text-decoration: underline;
+  font-size: 0.9rem;
+}
+
+.entry-number {
+  font-family: var(--font-body);
+  font-style: italic;
+  color: var(--salbei-tief);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.zurueck-zeile {
+  margin-bottom: 1rem;
+}
+
+/* Anklickbare Listenzeile (Sets, Gruppen) */
+.listenzeile {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  text-align: left;
+  background: var(--paper-light);
+  color: var(--text);
+  border: 1.5px solid var(--border-dark);
+  border-radius: 4px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.6rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.listenzeile:hover {
+  border-color: var(--bordeaux);
+}
+
+.listenzeile-titel {
+  font-family: var(--font-title);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.stapel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.zeile-zwischen {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.gross-zahl {
+  font-family: var(--font-title);
+  font-size: 3rem;
+  font-weight: 600;
+  color: var(--bordeaux);
+  line-height: 1;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 2rem 1rem;
+  opacity: 0.7;
+  font-style: italic;
+}
+
+.fehler-banner {
+  border: 1.5px solid var(--bordeaux);
+  background: rgba(122, 46, 58, 0.08);
+  border-radius: 3px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* --- Leitner-Box-Balken -------------------------------------------------- */
+.box-balken {
+  display: flex;
+  width: 100%;
+  height: 12px;
+  border: 1px solid var(--border-dark);
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--paper);
+}
+
+.box-balken-segment {
+  height: 100%;
+}
+
+.box-legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.9rem;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.box-legende-eintrag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.box-punkt {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  border: 1px solid rgba(43, 38, 34, 0.35);
+  flex-shrink: 0;
+}
+
+/* --- Lernmodus -------------------------------------------------------------- */
+.lern-fortschritt {
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+/* --- Trainer ("Daran arbeite ich") --------------------------------------- */
+.trainer-leiste {
+  display: flex;
+  border-bottom: 2px solid var(--border-dark);
+  margin-bottom: 1.25rem;
+}
+
+.trainer-leiste-seg {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.4rem 0.2rem 0.5rem;
+  border-top: 4px solid var(--box-1);
+  border-right: 1px solid rgba(43, 38, 34, 0.25);
+  text-align: center;
+}
+
+.trainer-leiste-seg:last-child {
+  border-right: none;
+}
+
+.trainer-leiste-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.trainer-leiste-zahl {
+  font-family: var(--font-title);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.trainer-leiste-anteil {
+  display: block;
+  width: 100%;
+  height: 3px;
+  background: var(--paper);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.trainer-leiste-anteil > span {
+  display: block;
+  height: 100%;
+}
+
+.trainer-karte {
+  border: 3px double var(--border-dark);
+  border-radius: 6px;
+  background: var(--paper-light);
+  padding: 1rem 1.25rem 1.25rem;
+  margin-top: 0.5rem;
+}
+
+/* Flip-Fläche im Trainer dezenter — der doppelte Rahmen sitzt schon aussen. */
+.trainer-karte .lern-karte {
+  border-width: 1.5px;
+  border-style: solid;
+  border-color: rgba(43, 38, 34, 0.35);
+  min-height: 190px;
+  padding: 1.5rem 1.25rem;
+}
+
+.trainer-karte .lern-karte.rueckseite {
+  border-color: var(--salbei-tief);
+}
+
+.trainer-scope {
+  text-align: right;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: var(--salbei-tief);
+  margin-bottom: 0.25rem;
+  overflow-wrap: anywhere;
+}
+
+.trainer-fuss {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 1.25rem;
+}
+
+.aktiv-marke {
+  color: var(--salbei-tief);
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.lern-karte {
+  border: 3px double var(--border-dark);
+  border-radius: 6px;
+  background: var(--paper-light);
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem 1.5rem;
+  cursor: pointer;
+  gap: 1rem;
+}
+
+.lern-karte.rueckseite {
+  border-color: var(--salbei-tief);
+}
+
+.lern-karte-seiten-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--salbei-tief);
+  font-weight: 700;
+}
+
+.lern-karte-text {
+  font-family: var(--font-title);
+  font-size: 1.5rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.lern-karte-bild {
+  max-height: 180px;
+  border-radius: 4px;
+  border: 1px solid var(--border-dark);
+}
+
+.lern-karte-hinweis {
+  font-style: italic;
+  opacity: 0.6;
+  font-size: 0.85rem;
+}
+
+.bewertung-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.bewertung-row .btn {
+  flex: 1;
+}
+
+/* Kartenpaar-Vorschau beim Import */
+.import-vorschau {
+  border: 1.5px solid var(--border-dark);
+  border-radius: 3px;
+  background: var(--paper);
+  padding: 0.5rem 0.75rem;
+  max-height: 220px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+}
+
+.import-vorschau-zeile {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px dotted rgba(43, 38, 34, 0.25);
+}
+
+.import-vorschau-zeile:last-child {
+  border-bottom: none;
+}
+
+.import-vorschau-vs {
+  font-weight: 700;
+  flex: 1;
+}
+.import-vorschau-rs {
+  flex: 1;
+  opacity: 0.8;
+}
+
+.karten-liste-eintrag {
+  border: 1.5px solid var(--border-dark);
+  border-radius: 3px;
+  background: var(--paper-light);
+  padding: 0.6rem 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.karten-liste-eintrag .vs {
+  font-weight: 700;
+}
+.karten-liste-eintrag .rs {
+  opacity: 0.8;
+}
+
+.mini-box-marke {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 0.05em 0.5em;
+}
+
+.faellig-marke {
+  color: var(--bordeaux);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.zettel {
+  display: inline-block;
+  background: var(--paper);
+  border: 1px solid var(--border-dark);
+  border-radius: 3px;
+  transform: rotate(-1.5deg);
+  font-style: italic;
+  padding: 0.5em 0.8em;
+  box-shadow: 0 2px 4px rgba(43, 38, 34, 0.15);
+  font-size: 0.9rem;
+}
