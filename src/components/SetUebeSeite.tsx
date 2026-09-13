@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { anzahlFaellig, gestarteteKarten, sortiereKarten, vorratKarten } from "../leitner";
-import type { Karte, KartenSet } from "../types";
+import { ALLE_BOXEN, anzahlFaellig, boxVerteilung, gestarteteKarten, sortiereKarten, vorratKarten } from "../leitner";
+import type { BoxNummer, Karte, KartenSet } from "../types";
 import { BoxBalken } from "./BoxBalken";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { NeueWoerterPanel } from "./NeueWoerterPanel";
@@ -15,6 +15,7 @@ interface Props {
   onWoerterStarten: (karteIds: string[]) => void;
   onVerwalten: () => void;
   onLernen: () => void;
+  onBoxUeben: (box: BoxNummer) => void;
 }
 
 export function SetUebeSeite({
@@ -27,6 +28,7 @@ export function SetUebeSeite({
   onWoerterStarten,
   onVerwalten,
   onLernen,
+  onBoxUeben,
 }: Props) {
   const [nameBearbeiten, setNameBearbeiten] = useState(false);
   const [nameEntwurf, setNameEntwurf] = useState(set.name);
@@ -35,6 +37,8 @@ export function SetUebeSeite({
   const gestartet = gestarteteKarten(karten);
   const vorrat = sortiereKarten(vorratKarten(karten));
   const faellig = anzahlFaellig(karten);
+  const verteilung = boxVerteilung(karten);
+  const belegteBoxen = ALLE_BOXEN.filter((b) => verteilung[b] > 0);
 
   return (
     <div>
@@ -106,6 +110,22 @@ export function SetUebeSeite({
           Karten verwalten
         </button>
       </div>
+
+      {belegteBoxen.length > 0 && (
+        <div className="card" style={{ marginTop: "1rem" }}>
+          <strong>Einzelne Box üben</strong>
+          <p className="note" style={{ margin: "0.2rem 0 0.6rem" }}>
+            Unabhängig von der Fälligkeit — für gezieltes Wiederholen.
+          </p>
+          <div className="tag-row" style={{ marginBottom: 0 }}>
+            {belegteBoxen.map((b) => (
+              <button key={b} className="tag salbei" onClick={() => onBoxUeben(b)}>
+                Box {b} ({verteilung[b]})
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="ornament salbei">
         <span className="dot" />

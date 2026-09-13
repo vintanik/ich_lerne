@@ -56,7 +56,8 @@ export interface LernErgebnis {
 export type LernBereich =
   | { typ: "alle-faellig" }
   | { typ: "aktiv" }
-  | { typ: "set"; setId: string };
+  | { typ: "set"; setId: string }
+  | { typ: "box"; setId: string; box: BoxNummer };
 
 /** Kompletter Datenbestand — Grundlage für Laden und Backup. */
 export interface DatenBestand {

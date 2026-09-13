@@ -136,6 +136,7 @@ export function BibliothekRoute(props: Props) {
         onWoerterStarten={props.onWoerterStarten}
         onVerwalten={() => setView({ typ: "verwalten", setId: set.id })}
         onLernen={() => props.onLernen({ typ: "set", setId: set.id })}
+        onBoxUeben={(box) => props.onLernen({ typ: "box", setId: set.id, box })}
       />
     );
   }

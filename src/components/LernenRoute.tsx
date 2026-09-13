@@ -28,12 +28,19 @@ export function LernenRoute({ sets, karten, startBereich, onAntwort, onFertig }:
   function kartenFuerBereich(bereich: LernBereich): Karte[] {
     if (bereich.typ === "alle-faellig") return karten.filter((k) => istFaellig(k));
     if (bereich.typ === "aktiv") return aktiveKarten(karten, sets);
+    if (bereich.typ === "box") {
+      return gestarteteKarten(karten.filter((k) => k.setId === bereich.setId && k.box === bereich.box));
+    }
     return gestarteteKarten(karten.filter((k) => k.setId === bereich.setId));
   }
 
   function bereichLabel(bereich: LernBereich): string {
     if (bereich.typ === "alle-faellig") return "Alle fälligen Karten";
     if (bereich.typ === "aktiv") return "Daran arbeite ich";
+    if (bereich.typ === "box") {
+      const setName = sets.find((s) => s.id === bereich.setId)?.name ?? "Set";
+      return `${setName} / Box ${bereich.box}`;
+    }
     return sets.find((s) => s.id === bereich.setId)?.name ?? "Set";
   }
 
@@ -89,7 +96,10 @@ export function LernenRoute({ sets, karten, startBereich, onAntwort, onFertig }:
     const alle = kartenFuerBereich(phase.bereich);
     const faellige = alle.filter((k) => istFaellig(k));
     const istFaelligBereich = phase.bereich.typ === "alle-faellig";
-    const auswahl = istFaelligBereich || nurFaellige ? faellige : alle;
+    // "Box üben" ist bewusste, gezielte Wiederholung — unabhängig von der
+    // Fälligkeit, deshalb hier immer alle Karten der Box, kein Häkchen.
+    const istBoxBereich = phase.bereich.typ === "box";
+    const auswahl = istFaelligBereich ? faellige : istBoxBereich ? alle : nurFaellige ? faellige : alle;
 
     return (
       <div>
@@ -101,10 +111,12 @@ export function LernenRoute({ sets, karten, startBereich, onAntwort, onFertig }:
 
         <h2>{bereichLabel(phase.bereich)}</h2>
         <p className="note">
-          {faellige.length} von {alle.length} Karten sind fällig.
+          {istBoxBereich
+            ? `${alle.length} ${alle.length === 1 ? "Karte" : "Karten"} in dieser Box.`
+            : `${faellige.length} von ${alle.length} Karten sind fällig.`}
         </p>
 
-        {!istFaelligBereich && (
+        {!istFaelligBereich && !istBoxBereich && (
           <label style={{ textTransform: "none", letterSpacing: 0, color: "var(--text)", fontWeight: 400 }}>
             <input
               type="checkbox"
@@ -128,9 +140,11 @@ export function LernenRoute({ sets, karten, startBereich, onAntwort, onFertig }:
 
         {auswahl.length === 0 && (
           <p className="note" style={{ marginTop: "1rem" }}>
-            {istFaelligBereich || nurFaellige
-              ? "Gerade nichts fällig — schön! Du kannst später wiederkommen oder das Häkchen entfernen, um alle zu üben."
-              : "Hier ist noch nichts im Lernen. Hol dir im Set erst ein paar Wörter aus dem Vorrat."}
+            {istBoxBereich
+              ? "Diese Box ist gerade leer."
+              : istFaelligBereich || nurFaellige
+                ? "Gerade nichts fällig — schön! Du kannst später wiederkommen oder das Häkchen entfernen, um alle zu üben."
+                : "Hier ist noch nichts im Lernen. Hol dir im Set erst ein paar Wörter aus dem Vorrat."}
           </p>
         )}
       </div>
