@@ -13,6 +13,7 @@ import {
   karteLoeschen,
   karteSpeichern,
   kartenSpeichern,
+  kontoGemerkt,
   ladeBestand,
   ladeEinstellungen,
   letzteKonten,
@@ -123,6 +124,13 @@ function App() {
       abgebrochen = true;
     };
   }, [userId]);
+
+  // Merkt die E-Mail einer schon bestehenden Sitzung nach (Konto-Schnellwechsel):
+  // sonst würde eine Sitzung, die schon vor diesem Feature bestand und nie neu
+  // über das Login-Formular angemeldet wurde, in "letzte Konten" nie auftauchen.
+  useEffect(() => {
+    if (session?.user.email) kontoGemerkt(session.user.email);
+  }, [session?.user.email]);
 
   // Einmalig pro Browser prüfen, ob lokale IndexedDB-Altdaten (von vor der
   // Cloud-Umstellung) übernommen werden sollen.
