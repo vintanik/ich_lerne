@@ -5,6 +5,7 @@ import { hatLokaleDaten } from "./cloudMigration";
 import { baueKarten, baueNeuesSet, heuteIso, karteStarten, nachAntwort } from "./leitner";
 import { baueOrdner } from "./ordner";
 import {
+  einstellungenSpeichern,
   exportiereBackup,
   getHintergrund,
   importiereBackup,
@@ -12,6 +13,7 @@ import {
   karteSpeichern,
   kartenSpeichern,
   ladeBestand,
+  ladeEinstellungen,
   ordnerErstellen as ordnerInsertieren,
   ordnerLoeschen as ordnerEntfernenSpeichern,
   ordnerSpeichern,
@@ -54,6 +56,7 @@ function App() {
   const [ansicht, setAnsicht] = useState<Ansicht>("bibliothek");
   const [lernBereich, setLernBereich] = useState<LernBereich | null>(null);
   const [hintergrund, setHintergrundState] = useState<Hintergrund>(getHintergrund());
+  const [karteFaelltZurueck, setKarteFaelltZurueckState] = useState(true);
 
   useEffect(() => {
     document.body.dataset.hintergrund = hintergrund;
@@ -80,6 +83,22 @@ function App() {
       abgebrochen = true;
     };
   }, [userId, ladeVersuch]);
+
+  // Separat vom Lade-Gate: eine fehlende/fehlgeschlagene Einstellungs-Zeile
+  // (z. B. Migration 0003 noch nicht ausgeführt) soll niemals die ganze App
+  // blockieren — bei Fehler bleibt einfach der Standard (Box fällt zurück).
+  useEffect(() => {
+    if (!userId) return;
+    let abgebrochen = false;
+    ladeEinstellungen()
+      .then((wert) => {
+        if (!abgebrochen) setKarteFaelltZurueckState(wert);
+      })
+      .catch(() => {});
+    return () => {
+      abgebrochen = true;
+    };
+  }, [userId]);
 
   // Einmalig pro Browser prüfen, ob lokale IndexedDB-Altdaten (von vor der
   // Cloud-Umstellung) übernommen werden sollen.
@@ -116,6 +135,15 @@ function App() {
   function hintergrundWaehlen(wert: Hintergrund) {
     setHintergrundState(wert);
     speichereHintergrund(wert);
+  }
+
+  function karteFaelltZurueckAendern(wert: boolean) {
+    const vorher = karteFaelltZurueck;
+    optimistisch(
+      () => setKarteFaelltZurueckState(wert),
+      () => einstellungenSpeichern(wert),
+      () => setKarteFaelltZurueckState(vorher),
+    );
   }
 
   // --- Set-Aktionen ---------------------------------------------------
@@ -312,13 +340,13 @@ function App() {
   function lernAntwort(karteId: string, richtig: boolean) {
     const karte = karten.find((k) => k.id === karteId);
     if (!karte) return;
-    const { box, naechsteWiederholung } = nachAntwort(karte, richtig);
+    const { box, naechsteWiederholung } = nachAntwort(karte, richtig, karteFaelltZurueck);
     const neueKarte: Karte = { ...karte, box, naechsteWiederholung };
-    const vorher = karten;
+    const vorherKarte = karte;
     optimistisch(
       () => setKarten((k) => k.map((x) => (x.id === karteId ? neueKarte : x))),
       () => karteSpeichern(neueKarte),
-      () => setKarten(vorher),
+      () => setKarten((k) => k.map((x) => (x.id === karteId ? vorherKarte : x))),
     );
   }
 
@@ -430,6 +458,7 @@ function App() {
           sets={sets}
           karten={karten}
           startBereich={lernBereich}
+          karteFaelltZurueck={karteFaelltZurueck}
           onAntwort={lernAntwort}
           onFertig={() => setAnsicht("bibliothek")}
         />
@@ -439,6 +468,8 @@ function App() {
         <EinstellungenRoute
           hintergrund={hintergrund}
           onHintergrund={hintergrundWaehlen}
+          karteFaelltZurueck={karteFaelltZurueck}
+          onKarteFaelltZurueck={karteFaelltZurueckAendern}
           onExport={exportiereBackup}
           onImport={importiereBackup}
           onImportUebernommen={backupUebernehmen}

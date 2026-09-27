@@ -155,6 +155,22 @@ export async function karteLoeschen(id: string): Promise<void> {
   if (error) throw error;
 }
 
+// --- Einstellungen (Konto-weit, Supabase-synced — im Gegensatz zu den
+// reinen UI-Präferenzen weiter unten, die bewusst nur lokal liegen) --------
+
+export async function ladeEinstellungen(): Promise<boolean> {
+  const { data, error } = await supabase.from("einstellungen").select("karte_faellt_zurueck").maybeSingle();
+  if (error) throw error;
+  return data?.karte_faellt_zurueck ?? true;
+}
+
+export async function einstellungenSpeichern(karteFaelltZurueck: boolean): Promise<void> {
+  const { error } = await supabase
+    .from("einstellungen")
+    .upsert({ karte_faellt_zurueck: karteFaelltZurueck }, { onConflict: "user_id" });
+  if (error) throw error;
+}
+
 // --- Laden ---------------------------------------------------------------
 
 export async function ladeBestand(): Promise<DatenBestand> {

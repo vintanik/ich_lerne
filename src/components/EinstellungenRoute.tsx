@@ -8,6 +8,8 @@ import { ConfirmDialog } from "./ConfirmDialog";
 interface Props {
   hintergrund: Hintergrund;
   onHintergrund: (wert: Hintergrund) => void;
+  karteFaelltZurueck: boolean;
+  onKarteFaelltZurueck: (wert: boolean) => void;
   onExport: () => Promise<string>;
   onImport: (json: string) => Promise<DatenBestand>;
   onImportUebernommen: (bestand: DatenBestand) => void;
@@ -17,6 +19,8 @@ interface Props {
 export function EinstellungenRoute({
   hintergrund,
   onHintergrund,
+  karteFaelltZurueck,
+  onKarteFaelltZurueck,
   onExport,
   onImport,
   onImportUebernommen,
@@ -116,6 +120,26 @@ export function EinstellungenRoute({
           Modern / clean
         </button>
       </div>
+
+      <div className="ornament salbei">
+        <span className="dot" />
+      </div>
+
+      <h3>Lernverhalten</h3>
+      <label style={{ display: "flex", alignItems: "center", textTransform: "none", letterSpacing: 0, color: "var(--text)", fontWeight: 400 }}>
+        <input
+          type="checkbox"
+          checked={karteFaelltZurueck}
+          onChange={(e) => onKarteFaelltZurueck(e.target.checked)}
+          style={{ marginRight: "0.5rem" }}
+        />
+        Bei falscher Antwort fällt die Karte eine Box zurück
+      </label>
+      <p className="note">
+        {karteFaelltZurueck
+          ? "Klassisches Leitner-System (Standard). Ausschalten lässt die Karte bei Falsch in ihrer Box stehen — nur der Fälligkeitstermin wird neu gesetzt."
+          : "Karten bleiben bei Falsch in ihrer aktuellen Box. Gilt geräteübergreifend für dieses Konto."}
+      </p>
 
       <div className="ornament salbei">
         <span className="dot" />

@@ -77,18 +77,24 @@ export function naechsteWiederholungFuerBox(box: BoxNummer, abIso: string = heut
 }
 
 /**
- * Leitner-Kern: "richtig" schiebt eine Box weiter (max. Box 5),
- * "falsch" eine Box zurück (mind. Box 1). Gibt die neuen Feldwerte zurück,
- * ohne die Karte zu mutieren.
+ * Leitner-Kern: "richtig" schiebt eine Box weiter (max. Box 5). "falsch"
+ * schiebt standardmässig eine Box zurück (mind. Box 1, klassisches
+ * Leitner-System) — wer das in den Einstellungen ausschaltet
+ * (`falschFaelltZurueck = false`), dessen Karte bleibt bei Falsch einfach in
+ * ihrer aktuellen Box, nur der Fälligkeitstermin wird neu gesetzt. Gibt die
+ * neuen Feldwerte zurück, ohne die Karte zu mutieren.
  */
 export function nachAntwort(
   karte: Karte,
   richtig: boolean,
+  falschFaelltZurueck: boolean = true,
   heute: string = heuteIso(),
 ): { box: BoxNummer; naechsteWiederholung: string } {
   const neueBox: BoxNummer = richtig
     ? (Math.min(karte.box + 1, MAX_BOX) as BoxNummer)
-    : (Math.max(karte.box - 1, 1) as BoxNummer);
+    : falschFaelltZurueck
+      ? (Math.max(karte.box - 1, 1) as BoxNummer)
+      : karte.box;
   return { box: neueBox, naechsteWiederholung: naechsteWiederholungFuerBox(neueBox, heute) };
 }
 

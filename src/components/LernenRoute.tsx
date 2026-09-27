@@ -8,6 +8,7 @@ interface Props {
   sets: KartenSet[];
   karten: Karte[];
   startBereich: LernBereich;
+  karteFaelltZurueck: boolean;
   onAntwort: (karteId: string, richtig: boolean) => void;
   onFertig: () => void;
 }
@@ -17,7 +18,7 @@ type Phase =
   | { name: "runde"; karten: Karte[]; nr: number; bereich: LernBereich }
   | { name: "abschluss"; ergebnisse: LernErgebnis[]; kartenIds: string[]; bereich: LernBereich };
 
-export function LernenRoute({ sets, karten, startBereich, onAntwort, onFertig }: Props) {
+export function LernenRoute({ sets, karten, startBereich, karteFaelltZurueck, onAntwort, onFertig }: Props) {
   const [phase, setPhase] = useState<Phase>({ name: "vorbereit", bereich: startBereich });
   const [nurFaellige, setNurFaellige] = useState(true);
 
@@ -122,7 +123,7 @@ export function LernenRoute({ sets, karten, startBereich, onAntwort, onFertig }:
               vorderseite: b.karte.vorderseite,
               richtig: b.richtig,
               alteBox: b.karte.box,
-              neueBox: nachAntwort(b.karte, b.richtig).box,
+              neueBox: nachAntwort(b.karte, b.richtig, karteFaelltZurueck).box,
             })),
             kartenIds,
             bereich: phase.bereich,

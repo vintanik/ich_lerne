@@ -12,7 +12,9 @@ lernt sie nach dem Leitner-Boxen-Prinzip ein.
 
 - **Box 1** täglich fällig → **Box 2** alle 2 Tage → **Box 3** alle 4 Tage →
   **Box 4** wöchentlich → **Box 5** alle 2 Wochen
-- Richtig → eine Box weiter (max. 5). Falsch → eine Box zurück (mind. 1).
+- Richtig → eine Box weiter (max. 5). Falsch → eine Box zurück (mind. 1) —
+  Standard, in den Einstellungen pro Konto abschaltbar (dann bleibt die Karte
+  bei Falsch einfach in ihrer Box).
 
 Die Box-Intervalle stehen zentral in [`src/leitner.ts`](src/leitner.ts)
 (`BOX_INTERVALL_TAGE`) und lassen sich dort anpassen.
@@ -57,9 +59,11 @@ Trainer selbst (Fortschrittsleiste über die 5 Boxen, Karte umdrehen + selbst
 1. Neues Projekt auf [supabase.com](https://supabase.com/dashboard) anlegen
    (Region Europe empfohlen).
 2. Im SQL Editor der Reihe nach
-   [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) und
-   [`supabase/migrations/0002_ordner.sql`](supabase/migrations/0002_ordner.sql)
-   ausführen — legt die Tabellen `sets`/`karten`/`ordner` samt Row-Level-Security an.
+   [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql),
+   [`supabase/migrations/0002_ordner.sql`](supabase/migrations/0002_ordner.sql) und
+   [`supabase/migrations/0003_einstellungen.sql`](supabase/migrations/0003_einstellungen.sql)
+   ausführen — legt die Tabellen `sets`/`karten`/`ordner`/`einstellungen` samt
+   Row-Level-Security an.
 3. Unter Project Settings → API: „Project URL" und „anon public key" kopieren.
 4. `.env.example` zu `.env` kopieren und mit diesen beiden Werten befüllen.
 
