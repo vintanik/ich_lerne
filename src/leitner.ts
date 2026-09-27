@@ -148,11 +148,11 @@ export interface NeuerSetBundle {
  * im Vorrat (gestartet=false) — man holt sie später portionsweise in Box 1.
  * IDs werden clientseitig vergeben (crypto.randomUUID).
  */
-export function baueNeuesSet(name: string, paare: KartePaar[]): NeuerSetBundle {
+export function baueNeuesSet(name: string, paare: KartePaar[], ordnerId: string | null = null): NeuerSetBundle {
   const jetzt = new Date().toISOString();
   const heute = heuteIso();
   const setId = crypto.randomUUID();
-  const set: KartenSet = { id: setId, name: name.trim(), erstelltAm: jetzt };
+  const set: KartenSet = { id: setId, name: name.trim(), erstelltAm: jetzt, ordnerId };
 
   const karten: Karte[] = paare.map((paar, i) => ({
     id: crypto.randomUUID(),

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ALLE_BOXEN, anzahlFaellig, boxVerteilung, gestarteteKarten, sortiereKarten, vorratKarten } from "../leitner";
-import type { BoxNummer, Karte, KartenSet } from "../types";
+import { ordnerBaumFlach, ordnerPfad } from "../ordner";
+import type { BoxNummer, Karte, KartenSet, Ordner } from "../types";
 import { BoxBalken } from "./BoxBalken";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { NeueWoerterPanel } from "./NeueWoerterPanel";
@@ -8,8 +9,10 @@ import { NeueWoerterPanel } from "./NeueWoerterPanel";
 interface Props {
   set: KartenSet;
   karten: Karte[];
+  ordner: Ordner[];
   onZurueck: () => void;
   onUmbenennen: (name: string) => void;
+  onOrdnerZuweisen: (ordnerId: string | null) => void;
   onLoeschen: () => void;
   onWoerterStarten: (karteIds: string[]) => void;
   onVerwalten: () => void;
@@ -17,11 +20,15 @@ interface Props {
   onBoxUeben: (box: BoxNummer) => void;
 }
 
+const KEIN_ORDNER = "__kein-ordner__";
+
 export function SetUebeSeite({
   set,
   karten,
+  ordner,
   onZurueck,
   onUmbenennen,
+  onOrdnerZuweisen,
   onLoeschen,
   onWoerterStarten,
   onVerwalten,
@@ -31,6 +38,10 @@ export function SetUebeSeite({
   const [nameBearbeiten, setNameBearbeiten] = useState(false);
   const [nameEntwurf, setNameEntwurf] = useState(set.name);
   const [zeigeLoeschen, setZeigeLoeschen] = useState(false);
+
+  const ordnerOptionen = ordnerBaumFlach(ordner);
+  const elternPfad = ordnerPfad(set.ordnerId ?? null, ordner);
+  const zurueckLabel = elternPfad.length > 0 ? elternPfad[elternPfad.length - 1].name : "Bibliothek";
 
   const gestartet = gestarteteKarten(karten);
   const vorrat = sortiereKarten(vorratKarten(karten));
@@ -42,7 +53,7 @@ export function SetUebeSeite({
     <div>
       <div className="zurueck-zeile">
         <button className="btn secondary" onClick={onZurueck}>
-          ← Ganze Bibliothek
+          ← {zurueckLabel}
         </button>
       </div>
 
@@ -85,6 +96,23 @@ export function SetUebeSeite({
           </button>
         </div>
       )}
+
+      <div className="field" style={{ maxWidth: "20rem" }}>
+        <label htmlFor="set-ordner">Ordner</label>
+        <select
+          id="set-ordner"
+          value={set.ordnerId ?? KEIN_ORDNER}
+          onChange={(e) => onOrdnerZuweisen(e.target.value === KEIN_ORDNER ? null : e.target.value)}
+        >
+          <option value={KEIN_ORDNER}>— Oberste Ebene —</option>
+          {ordnerOptionen.map(({ ordner: o, tiefe }) => (
+            <option key={o.id} value={o.id}>
+              {"　".repeat(tiefe)}
+              {o.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
       <p className="note">
         {gestartet.length} im Lernen · {vorrat.length} im Vorrat · {faellig} fällig

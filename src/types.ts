@@ -8,7 +8,24 @@ export interface KartenSet {
   id: string;
   name: string;
   erstelltAm: string;
+  /** In welchem Ordner das Set liegt. null/fehlt = oberste Ebene (Bibliothek-Wurzel). */
+  ordnerId?: string | null;
 }
+
+/**
+ * Ordner zum Aufräumen der Bibliothek (z. B. Sprache → Unit). Kann sich
+ * beliebig tief selbst verschachteln — Sprache/Unit sind nur ein Beispiel,
+ * keine feste Grenze.
+ */
+export interface Ordner {
+  id: string;
+  name: string;
+  /** null = oberste Ebene (Bibliothek-Wurzel). */
+  parentId: string | null;
+  erstelltAm: string;
+}
+
+export type OrdnerEingabe = Pick<Ordner, "name" | "parentId">;
 
 export interface Karte {
   id: string;
@@ -54,4 +71,5 @@ export type LernBereich = { typ: "set"; setId: string } | { typ: "box"; setId: s
 export interface DatenBestand {
   sets: KartenSet[];
   karten: Karte[];
+  ordner: Ordner[];
 }

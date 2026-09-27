@@ -19,12 +19,19 @@ Die Box-Intervalle stehen zentral in [`src/leitner.ts`](src/leitner.ts)
 
 ## Bibliothek
 
-Einziger Einstiegspunkt: alle Sets verwalten. Ein Set öffnen führt direkt auf die
-Übe-Startseite — Box-Übersicht, „Üben" (fällige Karten), „Einzelne Box üben"
-(unabhängig von der Fälligkeit, für gezieltes Wiederholen), „Neue Wörter ins
-Lernen holen", „Karten verwalten". Der Trainer selbst (Fortschrittsleiste über
-die 5 Boxen, Karte umdrehen + selbst „richtig/falsch", „überspringen") wird
-von dort aus gestartet — kein separater "aktiv"-Schritt nötig.
+Einziger Einstiegspunkt: alle Sets verwalten, in beliebig verschachtelten
+**Ordnern** (z. B. Sprache → Unit), oder einfach lose auf oberster Ebene — Ordner
+sind rein optional, nichts muss einsortiert werden. Ein Set kann jederzeit über
+das „Ordner"-Feld auf seiner Übe-Seite in einen anderen Ordner verschoben werden.
+Löscht man einen Ordner, gehen seine Inhalte nicht verloren — Unter-Ordner/Sets
+rutschen einfach eine Ebene hoch.
+
+Ein Set öffnen führt direkt auf die Übe-Startseite — Box-Übersicht, „Üben"
+(fällige Karten), „Einzelne Box üben" (unabhängig von der Fälligkeit, für
+gezieltes Wiederholen), „Neue Wörter ins Lernen holen", „Karten verwalten". Der
+Trainer selbst (Fortschrittsleiste über die 5 Boxen, Karte umdrehen + selbst
+„richtig/falsch", „überspringen") wird von dort aus gestartet — kein separater
+"aktiv"-Schritt nötig.
 
 ## Technik
 
@@ -49,8 +56,10 @@ von dort aus gestartet — kein separater "aktiv"-Schritt nötig.
 
 1. Neues Projekt auf [supabase.com](https://supabase.com/dashboard) anlegen
    (Region Europe empfohlen).
-2. Im SQL Editor [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql)
-   ausführen — legt die Tabellen `sets`/`karten` samt Row-Level-Security an.
+2. Im SQL Editor der Reihe nach
+   [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql) und
+   [`supabase/migrations/0002_ordner.sql`](supabase/migrations/0002_ordner.sql)
+   ausführen — legt die Tabellen `sets`/`karten`/`ordner` samt Row-Level-Security an.
 3. Unter Project Settings → API: „Project URL" und „anon public key" kopieren.
 4. `.env.example` zu `.env` kopieren und mit diesen beiden Werten befüllen.
 
@@ -65,7 +74,9 @@ npm run lint
 
 ## Datenmodell
 
-Siehe [`src/types.ts`](src/types.ts): `KartenSet` → `Karte`
-(mit `gestartet?`, `sortIndex?`, `box`, `naechsteWiederholung`, optionalem
+Siehe [`src/types.ts`](src/types.ts): `Ordner` (selbstverschachtelt über `parentId`,
+`null` = oberste Ebene) → `KartenSet` (mit `ordnerId?`, `null`/fehlt = oberste Ebene)
+→ `Karte` (mit `gestartet?`, `sortIndex?`, `box`, `naechsteWiederholung`, optionalem
 Base64-`bildBase64`). Karten ohne `gestartet`/`sortIndex` (Altdaten) gelten als
-gestartet — siehe `istGestartet` / `sortiereKarten`.
+gestartet — siehe `istGestartet` / `sortiereKarten`. Baum-Helfer (Pfad, Kinder,
+eingerückte flache Liste) in [`src/ordner.ts`](src/ordner.ts).

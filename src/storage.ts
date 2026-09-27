@@ -1,33 +1,72 @@
 // Einzige Storage-Schicht der App. Alles darüber (App, Komponenten) kennt
 // nur diese Funktionen, nie Supabase direkt. Seit der Cloud-Umstellung ist
-// dies die alleinige Live-Quelle (Sets/Karten) — reines IndexedDB-Backend
-// (idb.ts) wird nur noch von cloudMigration.ts für die einmalige
-// Altdaten-Übernahme gelesen, siehe dort.
+// dies die alleinige Live-Quelle (Sets/Karten/Ordner) — reines
+// IndexedDB-Backend (idb.ts) wird nur noch von cloudMigration.ts für die
+// einmalige Altdaten-Übernahme gelesen, siehe dort.
 
 import { supabase } from "./supabaseClient";
-import type { BoxNummer, DatenBestand, Karte, KartenSet } from "./types";
+import type { BoxNummer, DatenBestand, Karte, KartenSet, Ordner } from "./types";
 
 const KEYS = {
   hintergrund: "ichlerne.hintergrund",
   migrationAngeboten: "ichlerne.migrationAngeboten",
 } as const;
 
+// --- Ordner --------------------------------------------------------------
+
+interface OrdnerZeile {
+  id: string;
+  name: string;
+  parent_id: string | null;
+  erstellt_am: string;
+}
+
+function zeileZuOrdner(z: OrdnerZeile): Ordner {
+  return { id: z.id, name: z.name, parentId: z.parent_id, erstelltAm: z.erstellt_am };
+}
+
+const ORDNER_SELECT = "id, name, parent_id, erstellt_am";
+
+export async function ordnerErstellen(ordner: Ordner): Promise<void> {
+  const { error } = await supabase
+    .from("ordner")
+    .insert({ id: ordner.id, name: ordner.name, parent_id: ordner.parentId, erstellt_am: ordner.erstelltAm });
+  if (error) throw error;
+}
+
+export async function ordnerSpeichern(ordner: Ordner): Promise<void> {
+  const { error } = await supabase.from("ordner").update({ name: ordner.name }).eq("id", ordner.id);
+  if (error) throw error;
+}
+
+// Unter-Ordner/Sets werden serverseitig NICHT mitgelöscht (on delete set
+// null, siehe supabase/migrations/0002_ordner.sql) — sie rutschen automatisch
+// eine Ebene hoch. Hier reicht der Ordner selbst.
+export async function ordnerLoeschen(id: string): Promise<void> {
+  const { error } = await supabase.from("ordner").delete().eq("id", id);
+  if (error) throw error;
+}
+
 // --- Sets --------------------------------------------------------------
 
 interface SetZeile {
   id: string;
   name: string;
+  ordner_id: string | null;
   erstellt_am: string;
 }
 
 function zeileZuSet(z: SetZeile): KartenSet {
-  return { id: z.id, name: z.name, erstelltAm: z.erstellt_am };
+  return { id: z.id, name: z.name, ordnerId: z.ordner_id, erstelltAm: z.erstellt_am };
 }
 
-const SET_SELECT = "id, name, erstellt_am";
+const SET_SELECT = "id, name, ordner_id, erstellt_am";
 
 export async function setSpeichern(set: KartenSet): Promise<void> {
-  const { error } = await supabase.from("sets").update({ name: set.name }).eq("id", set.id);
+  const { error } = await supabase
+    .from("sets")
+    .update({ name: set.name, ordner_id: set.ordnerId ?? null })
+    .eq("id", set.id);
   if (error) throw error;
 }
 
@@ -35,7 +74,7 @@ export async function setSpeichern(set: KartenSet): Promise<void> {
 export async function setBundleSpeichern(set: KartenSet, karten: Karte[]): Promise<void> {
   const { error: setError } = await supabase
     .from("sets")
-    .insert({ id: set.id, name: set.name, erstellt_am: set.erstelltAm });
+    .insert({ id: set.id, name: set.name, ordner_id: set.ordnerId ?? null, erstellt_am: set.erstelltAm });
   if (setError) throw setError;
   if (karten.length > 0) {
     const { error: kartenError } = await supabase.from("karten").insert(karten.map(karteZuZeile));
@@ -119,13 +158,16 @@ export async function karteLoeschen(id: string): Promise<void> {
 // --- Laden ---------------------------------------------------------------
 
 export async function ladeBestand(): Promise<DatenBestand> {
-  const [setsRes, kartenRes] = await Promise.all([
+  const [ordnerRes, setsRes, kartenRes] = await Promise.all([
+    supabase.from("ordner").select(ORDNER_SELECT).order("erstellt_am", { ascending: true }),
     supabase.from("sets").select(SET_SELECT).order("erstellt_am", { ascending: true }),
     supabase.from("karten").select(KARTE_SELECT),
   ]);
+  if (ordnerRes.error) throw ordnerRes.error;
   if (setsRes.error) throw setsRes.error;
   if (kartenRes.error) throw kartenRes.error;
   return {
+    ordner: (ordnerRes.data as OrdnerZeile[]).map(zeileZuOrdner),
     sets: (setsRes.data as SetZeile[]).map(zeileZuSet),
     karten: (kartenRes.data as KarteZeile[]).map(zeileZuKarte),
   };
@@ -160,19 +202,21 @@ export function setMigrationAngeboten(): void {
 // Löschen+Neueinfügen derselben Zeilen, wie bei "Ich koche".
 
 export async function exportiereBackup(): Promise<string> {
-  const [setsRes, kartenRes] = await Promise.all([
+  const [ordnerRes, setsRes, kartenRes] = await Promise.all([
+    supabase.from("ordner").select("*"),
     supabase.from("sets").select("*"),
     supabase.from("karten").select("*"),
   ]);
+  if (ordnerRes.error) throw ordnerRes.error;
   if (setsRes.error) throw setsRes.error;
   if (kartenRes.error) throw kartenRes.error;
 
   return JSON.stringify(
     {
       app: "ich-lerne",
-      version: 3,
+      version: 4,
       erstelltAm: new Date().toISOString(),
-      tabellen: { sets: setsRes.data, karten: kartenRes.data },
+      tabellen: { ordner: ordnerRes.data, sets: setsRes.data, karten: kartenRes.data },
     },
     null,
     2,
@@ -180,9 +224,11 @@ export async function exportiereBackup(): Promise<string> {
 }
 
 /**
- * Volles "zurück auf diesen Stand": bestehende Zeilen beider Tabellen werden
+ * Volles "zurück auf diesen Stand": bestehende Zeilen aller Tabellen werden
  * gelöscht (karten kaskadiert automatisch über sets), danach die Zeilen aus
- * der Datei neu eingefügt.
+ * der Datei neu eingefügt — Ordner zuerst, da Sets per ordner_id auf sie
+ * verweisen können. Ältere Backups ohne "ordner" (Version 3) werden
+ * akzeptiert, dann gibt es einfach keine Ordner zum Wiederherstellen.
  */
 export async function importiereBackup(json: string): Promise<DatenBestand> {
   const geparst = JSON.parse(json);
@@ -190,12 +236,19 @@ export async function importiereBackup(json: string): Promise<DatenBestand> {
   if (!tabellen || !Array.isArray(tabellen.sets) || !Array.isArray(tabellen.karten)) {
     throw new Error("Ungültiges Backup-Format");
   }
+  const ordnerZeilen = (Array.isArray(tabellen.ordner) ? tabellen.ordner : []) as OrdnerZeile[];
   const setZeilen = tabellen.sets as SetZeile[];
   const kartenZeilen = tabellen.karten as KarteZeile[];
 
   const { error: setsDelError } = await supabase.from("sets").delete().not("id", "is", null);
   if (setsDelError) throw setsDelError;
+  const { error: ordnerDelError } = await supabase.from("ordner").delete().not("id", "is", null);
+  if (ordnerDelError) throw ordnerDelError;
 
+  if (ordnerZeilen.length > 0) {
+    const { error } = await supabase.from("ordner").insert(ordnerZeilen);
+    if (error) throw error;
+  }
   if (setZeilen.length > 0) {
     const { error } = await supabase.from("sets").insert(setZeilen);
     if (error) throw error;
@@ -205,5 +258,9 @@ export async function importiereBackup(json: string): Promise<DatenBestand> {
     if (error) throw error;
   }
 
-  return { sets: setZeilen.map(zeileZuSet), karten: kartenZeilen.map(zeileZuKarte) };
+  return {
+    ordner: ordnerZeilen.map(zeileZuOrdner),
+    sets: setZeilen.map(zeileZuSet),
+    karten: kartenZeilen.map(zeileZuKarte),
+  };
 }

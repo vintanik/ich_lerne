@@ -3,6 +3,7 @@ import { usePasswortWiederherstellung } from "./auth/usePasswortWiederherstellun
 import { useSession } from "./auth/useSession";
 import { hatLokaleDaten } from "./cloudMigration";
 import { baueKarten, baueNeuesSet, heuteIso, karteStarten, nachAntwort } from "./leitner";
+import { baueOrdner } from "./ordner";
 import {
   exportiereBackup,
   getHintergrund,
@@ -11,6 +12,9 @@ import {
   karteSpeichern,
   kartenSpeichern,
   ladeBestand,
+  ordnerErstellen as ordnerInsertieren,
+  ordnerLoeschen as ordnerEntfernenSpeichern,
+  ordnerSpeichern,
   setBundleSpeichern,
   setHintergrund as speichereHintergrund,
   setLoeschen,
@@ -19,7 +23,7 @@ import {
   wurdeMigrationAngeboten,
   type Hintergrund,
 } from "./storage";
-import type { DatenBestand, Karte, KartePaar, KartenSet, LernBereich, SetEingabe } from "./types";
+import type { DatenBestand, Karte, KartePaar, KartenSet, LernBereich, Ordner, OrdnerEingabe, SetEingabe } from "./types";
 import { BibliothekRoute } from "./components/BibliothekRoute";
 import { EinstellungenRoute } from "./components/EinstellungenRoute";
 import { FehlerBanner } from "./components/FehlerBanner";
@@ -41,6 +45,7 @@ function App() {
 
   const [sets, setSets] = useState<KartenSet[]>([]);
   const [karten, setKarten] = useState<Karte[]>([]);
+  const [ordner, setOrdner] = useState<Ordner[]>([]);
   const [datenZustand, setDatenZustand] = useState<"laedt" | "bereit" | "fehler">("laedt");
   const [ladeVersuch, setLadeVersuch] = useState(0);
   const [fehlermeldung, setFehlermeldung] = useState<string | null>(null);
@@ -65,6 +70,7 @@ function App() {
         if (abgebrochen) return;
         setSets(bestand.sets);
         setKarten(bestand.karten);
+        setOrdner(bestand.ordner);
         setDatenZustand("bereit");
       })
       .catch(() => {
@@ -114,8 +120,8 @@ function App() {
 
   // --- Set-Aktionen ---------------------------------------------------
 
-  function setErstellen(eingabe: SetEingabe, paare: KartePaar[]): KartenSet {
-    const { set, karten: neueKarten } = baueNeuesSet(eingabe.name, paare);
+  function setErstellen(eingabe: SetEingabe, paare: KartePaar[], ordnerId: string | null = null): KartenSet {
+    const { set, karten: neueKarten } = baueNeuesSet(eingabe.name, paare, ordnerId);
     const vorherSets = sets;
     const vorherKarten = karten;
     optimistisch(
@@ -158,6 +164,55 @@ function App() {
       () => {
         setSets(vorherSets);
         setKarten(vorherKarten);
+      },
+    );
+  }
+
+  // --- Ordner-Aktionen ------------------------------------------
+
+  function ordnerAnlegen(eingabe: OrdnerEingabe): Ordner {
+    const neu = baueOrdner(eingabe.name, eingabe.parentId);
+    const vorher = ordner;
+    optimistisch(
+      () => setOrdner((o) => [...o, neu]),
+      () => ordnerInsertieren(neu),
+      () => setOrdner(vorher),
+    );
+    return neu;
+  }
+
+  function ordnerUmbenennen(ordnerId: string, name: string) {
+    const vorher = ordner;
+    const neu = ordner.map((o) => (o.id === ordnerId ? { ...o, name } : o));
+    const geaendert = neu.find((o) => o.id === ordnerId);
+    if (!geaendert) return;
+    optimistisch(
+      () => setOrdner(neu),
+      () => ordnerSpeichern(geaendert),
+      () => setOrdner(vorher),
+    );
+  }
+
+  // Unter-Ordner/Sets rutschen eine Ebene hoch statt gelöscht zu werden —
+  // muss hier im optimistischen Update dieselbe Umsortierung nachbilden wie
+  // die "on delete set null"-Regel in der Datenbank (siehe 0002_ordner.sql),
+  // sonst zeigt der lokale State bis zum nächsten Neuladen tote Referenzen.
+  function ordnerEntfernen(ordnerId: string) {
+    const geloeschter = ordner.find((o) => o.id === ordnerId);
+    if (!geloeschter) return;
+    const vorherOrdner = ordner;
+    const vorherSets = sets;
+    optimistisch(
+      () => {
+        setOrdner((o) =>
+          o.filter((x) => x.id !== ordnerId).map((x) => (x.parentId === ordnerId ? { ...x, parentId: null } : x)),
+        );
+        setSets((s) => s.map((x) => (x.ordnerId === ordnerId ? { ...x, ordnerId: null } : x)));
+      },
+      () => ordnerEntfernenSpeichern(ordnerId),
+      () => {
+        setOrdner(vorherOrdner);
+        setSets(vorherSets);
       },
     );
   }
@@ -277,6 +332,7 @@ function App() {
   function backupUebernehmen(bestand: DatenBestand) {
     setSets(bestand.sets);
     setKarten(bestand.karten);
+    setOrdner(bestand.ordner);
     setAnsicht("bibliothek");
   }
 
@@ -353,9 +409,13 @@ function App() {
         <BibliothekRoute
           sets={sets}
           karten={karten}
+          ordner={ordner}
           onSetErstellen={setErstellen}
           onSetAktualisieren={setAktualisieren}
           onSetLoeschen={setEntfernen}
+          onOrdnerErstellen={ordnerAnlegen}
+          onOrdnerUmbenennen={ordnerUmbenennen}
+          onOrdnerLoeschen={ordnerEntfernen}
           onKarteErstellen={karteErstellen}
           onKartenImportieren={kartenImportieren}
           onKarteAendern={karteAendern}
