@@ -13,6 +13,7 @@ interface Props {
   kontoEmail?: string;
   andereKonten: string[];
   onKontoWechseln: (email: string) => void;
+  onIntroAnzeigen: () => void;
   onExport: () => Promise<string>;
   onImport: (json: string) => Promise<DatenBestand>;
   onImportUebernommen: (bestand: DatenBestand) => void;
@@ -27,6 +28,7 @@ export function EinstellungenRoute({
   kontoEmail,
   andereKonten,
   onKontoWechseln,
+  onIntroAnzeigen,
   onExport,
   onImport,
   onImportUebernommen,
@@ -216,6 +218,14 @@ export function EinstellungenRoute({
           />
         </div>
       )}
+
+      <div className="ornament">
+        <span className="dot" />
+      </div>
+
+      <button className="link-btn" onClick={onIntroAnzeigen}>
+        Intro erneut anzeigen
+      </button>
 
       <div className="ornament">
         <span className="dot" />

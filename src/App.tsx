@@ -13,6 +13,7 @@ import {
   karteLoeschen,
   karteSpeichern,
   kartenSpeichern,
+  introNichtMehrZeigen,
   kontoGemerkt,
   ladeBestand,
   ladeEinstellungen,
@@ -22,6 +23,7 @@ import {
   ordnerSpeichern,
   setBundleSpeichern,
   setHintergrund as speichereHintergrund,
+  setIntroNichtMehrZeigen as speichereIntroNichtMehrZeigen,
   setLoeschen,
   setMigrationAngeboten,
   setSpeichern,
@@ -44,6 +46,7 @@ import type {
 import { BibliothekRoute } from "./components/BibliothekRoute";
 import { EinstellungenRoute } from "./components/EinstellungenRoute";
 import { FehlerBanner } from "./components/FehlerBanner";
+import { IntroScreen } from "./components/IntroScreen";
 import { LernenRoute } from "./components/LernenRoute";
 import { LoginScreen } from "./components/LoginScreen";
 import { MigrationAngebot } from "./components/MigrationAngebot";
@@ -82,6 +85,7 @@ function App() {
   const [hintergrund, setHintergrundState] = useState<Hintergrund>(getHintergrund());
   const [karteFaelltZurueck, setKarteFaelltZurueckState] = useState(true);
   const [wechselZuEmail, setWechselZuEmail] = useState<string | null>(null);
+  const [introSichtbar, setIntroSichtbar] = useState(() => !introNichtMehrZeigen());
 
   useEffect(() => {
     document.body.dataset.hintergrund = hintergrund;
@@ -499,6 +503,17 @@ function App() {
     );
   }
 
+  if (introSichtbar) {
+    return (
+      <IntroScreen
+        onSchliessen={(nichtMehrZeigen) => {
+          if (nichtMehrZeigen) speichereIntroNichtMehrZeigen();
+          setIntroSichtbar(false);
+        }}
+      />
+    );
+  }
+
   return (
     <div className="app-shell">
       <Kopf />
@@ -571,6 +586,7 @@ function App() {
           kontoEmail={session.user.email}
           andereKonten={letzteKonten().filter((e) => e !== session.user.email)}
           onKontoWechseln={kontoWechseln}
+          onIntroAnzeigen={() => setIntroSichtbar(true)}
           onExport={exportiereBackup}
           onImport={importiereBackup}
           onImportUebernommen={backupUebernehmen}

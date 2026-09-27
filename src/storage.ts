@@ -11,6 +11,7 @@ const KEYS = {
   hintergrund: "ichlerne.hintergrund",
   migrationAngeboten: "ichlerne.migrationAngeboten",
   letzteKonten: "ichlerne.letzteKonten",
+  introNichtMehrZeigen: "ichlerne.introNichtMehrZeigen",
 } as const;
 
 // --- Ordner --------------------------------------------------------------
@@ -200,6 +201,17 @@ export function getHintergrund(): Hintergrund {
 
 export function setHintergrund(wert: Hintergrund): void {
   localStorage.setItem(KEYS.hintergrund, wert);
+}
+
+// Intro-Bildschirm: standardmässig bei jedem Start gezeigt (bis zur
+// "Nicht mehr anzeigen"-Checkbox), rein lokal, kein Sync — bewusst wie
+// hintergrund eine reine Geräte-Präferenz, kein Konto-Zustand.
+export function introNichtMehrZeigen(): boolean {
+  return localStorage.getItem(KEYS.introNichtMehrZeigen) === "true";
+}
+
+export function setIntroNichtMehrZeigen(): void {
+  localStorage.setItem(KEYS.introNichtMehrZeigen, "true");
 }
 
 // Zuletzt erfolgreich genutzte E-Mail-Adressen auf diesem Gerät (max. 5,
