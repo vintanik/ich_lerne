@@ -16,6 +16,8 @@ interface Props {
   scopeLabel: string;
   /** Bei gezieltem Box-Üben: welche Box hervorgehoben werden soll. */
   aktiveBox?: BoxNummer;
+  /** Direkt aus der Fortschrittsleiste in eine andere (nicht-leere) Box wechseln. */
+  onBoxWechseln: (box: BoxNummer) => void;
   /** pro Karte sofort, für die optimistische Box-Aktualisierung */
   onBewertung: (karte: Karte, richtig: boolean) => void;
   /** am Ende, mit allen Bewertungen der Runde */
@@ -41,7 +43,16 @@ const BOX_TEXT_AUF_FARBE: Record<BoxNummer, string> = {
   5: "var(--paper-light)",
 };
 
-export function LernModus({ karten, scopeKarten, scopeLabel, aktiveBox, onBewertung, onKomplett, onAbbrechen }: Props) {
+export function LernModus({
+  karten,
+  scopeKarten,
+  scopeLabel,
+  aktiveBox,
+  onBoxWechseln,
+  onBewertung,
+  onKomplett,
+  onAbbrechen,
+}: Props) {
   const gesamt = karten.length;
   const [queue, setQueue] = useState<Karte[]>(karten);
   const [erledigt, setErledigt] = useState(0);
@@ -79,10 +90,25 @@ export function LernModus({ karten, scopeKarten, scopeLabel, aktiveBox, onBewert
         {ALLE_BOXEN.map((b) => {
           const anteil = scopeGesamt > 0 ? (verteilung[b] / scopeGesamt) * 100 : 0;
           const istAktiv = b === aktiveBox;
+          const wechselbar = !istAktiv && verteilung[b] > 0;
           return (
             <div
-              className={`trainer-leiste-seg${istAktiv ? " aktiv" : ""}`}
+              className={`trainer-leiste-seg${istAktiv ? " aktiv" : ""}${wechselbar ? " wechselbar" : ""}`}
               key={b}
+              role={wechselbar ? "button" : undefined}
+              tabIndex={wechselbar ? 0 : undefined}
+              title={wechselbar ? `Zu Box ${b} wechseln` : undefined}
+              onClick={wechselbar ? () => onBoxWechseln(b) : undefined}
+              onKeyDown={
+                wechselbar
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onBoxWechseln(b);
+                      }
+                    }
+                  : undefined
+              }
               style={{
                 borderTopColor: BOX_FARBE[b],
                 background: istAktiv ? BOX_FARBE[b] : undefined,

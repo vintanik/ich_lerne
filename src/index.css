@@ -510,6 +510,16 @@ input[type="checkbox"] {
   font-weight: 700;
 }
 
+/* Klickbar, um direkt aus dem Trainer heraus in diese Box zu wechseln. */
+.trainer-leiste-seg.wechselbar {
+  cursor: pointer;
+}
+
+.trainer-leiste-seg.wechselbar:hover,
+.trainer-leiste-seg.wechselbar:focus-visible {
+  background: rgba(43, 38, 34, 0.06);
+}
+
 .trainer-leiste-label {
   font-size: 0.68rem;
   letter-spacing: 0.02em;

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ALLE_BOXEN, gestarteteKarten, istFaellig, mische, nachAntwort } from "../leitner";
-import type { Karte, KartenSet, LernBereich, LernErgebnis } from "../types";
+import type { BoxNummer, Karte, KartenSet, LernBereich, LernErgebnis } from "../types";
 import { BoxBalken } from "./BoxBalken";
 import { LernModus } from "./LernModus";
 
@@ -107,6 +107,17 @@ export function LernenRoute({ sets, karten, startBereich, karteFaelltZurueck, on
   // --- Laufende Runde ------------------------------------------
   if (phase.name === "runde") {
     const kartenIds = phase.karten.map((k) => k.id);
+    const setId = phase.bereich.setId;
+
+    // Direkt aus dem Trainer heraus in eine andere Box wechseln — bricht die
+    // laufende Runde ab (unbeantwortete Karten bleiben unverändert in ihrer
+    // Box, nichts geht verloren) und startet sofort eine neue mit der Box.
+    function boxWechseln(box: BoxNummer) {
+      const zielKarten = gestarteteKarten(karten.filter((k) => k.setId === setId && k.box === box));
+      if (zielKarten.length === 0) return;
+      setPhase({ name: "runde", karten: mische(zielKarten), nr: Date.now(), bereich: { typ: "box", setId, box } });
+    }
+
     return (
       <LernModus
         key={`runde-${phase.nr}`}
@@ -114,6 +125,7 @@ export function LernenRoute({ sets, karten, startBereich, karteFaelltZurueck, on
         scopeKarten={kartenFuerUebersicht(phase.bereich)}
         scopeLabel={bereichLabel(phase.bereich)}
         aktiveBox={phase.bereich.typ === "box" ? phase.bereich.box : undefined}
+        onBoxWechseln={boxWechseln}
         onBewertung={(karte, richtig) => onAntwort(karte.id, richtig)}
         onKomplett={(bewertungen) =>
           setPhase({
