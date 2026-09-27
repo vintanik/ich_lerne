@@ -73,3 +73,30 @@ export interface DatenBestand {
   karten: Karte[];
   ordner: Ordner[];
 }
+
+// --- Teilen (öffentliche, eingefrorene Kopien) --------------------------
+
+/**
+ * Eine geteilte Karte — bewusst nur Vorder-/Rückseite: kein Box/Fälligkeit/
+ * gestartet (Empfänger startet immer frisch im Vorrat) und bewusst KEIN Bild —
+ * die bestehende Sammel-Anlage eines Sets (KartePaar/baueNeuesSet) kann
+ * ohnehin keine Bilder setzen, die kämen nur einzeln per Kartenformular
+ * dazu. Ein Bild "mitzuteilen", das beim Übernehmen dann doch verloren geht,
+ * wäre stille Datenverfälschung — deshalb lieber gar nicht erst vorgeben.
+ */
+export interface GeteilteKarte {
+  vorderseite: string;
+  rueckseite: string;
+}
+
+export interface GeteiltesSet {
+  name: string;
+  karten: GeteilteKarte[];
+}
+
+/** Ein Knoten im geteilten Ordnerbaum — beliebig tief verschachtelt. */
+export interface GeteilterOrdnerKnoten {
+  name: string;
+  sets: GeteiltesSet[];
+  unterordner: GeteilterOrdnerKnoten[];
+}

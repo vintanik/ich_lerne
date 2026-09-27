@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePasswortWiederherstellung } from "./auth/usePasswortWiederherstellung";
 import { useSession } from "./auth/useSession";
 import { hatLokaleDaten } from "./cloudMigration";
 import { baueKarten, baueNeuesSet, heuteIso, karteStarten, nachAntwort } from "./leitner";
 import { baueOrdner } from "./ordner";
+import { erstelleOrdnerFreigabe, erstelleSetFreigabe, teilenLink } from "./sharing";
 import {
   einstellungenSpeichern,
   exportiereBackup,
@@ -14,6 +15,7 @@ import {
   kartenSpeichern,
   ladeBestand,
   ladeEinstellungen,
+  letzteKonten,
   ordnerErstellen as ordnerInsertieren,
   ordnerLoeschen as ordnerEntfernenSpeichern,
   ordnerSpeichern,
@@ -25,7 +27,19 @@ import {
   wurdeMigrationAngeboten,
   type Hintergrund,
 } from "./storage";
-import type { DatenBestand, Karte, KartePaar, KartenSet, LernBereich, Ordner, OrdnerEingabe, SetEingabe } from "./types";
+import { supabase } from "./supabaseClient";
+import type {
+  DatenBestand,
+  GeteilterOrdnerKnoten,
+  GeteiltesSet,
+  Karte,
+  KartePaar,
+  KartenSet,
+  LernBereich,
+  Ordner,
+  OrdnerEingabe,
+  SetEingabe,
+} from "./types";
 import { BibliothekRoute } from "./components/BibliothekRoute";
 import { EinstellungenRoute } from "./components/EinstellungenRoute";
 import { FehlerBanner } from "./components/FehlerBanner";
@@ -33,6 +47,7 @@ import { LernenRoute } from "./components/LernenRoute";
 import { LoginScreen } from "./components/LoginScreen";
 import { MigrationAngebot } from "./components/MigrationAngebot";
 import { PasswortZuruecksetzenScreen } from "./components/PasswortZuruecksetzenScreen";
+import { SharedRoute } from "./components/SharedRoute";
 
 type Ansicht = "bibliothek" | "lernen" | "einstellungen";
 
@@ -44,6 +59,14 @@ function App() {
   // ganzen session-Objekt.
   const userId = session?.user.id;
   const { istWiederherstellung, abschliessen: wiederherstellungAbschliessen } = usePasswortWiederherstellung();
+
+  // Bewusst kein Router: einziger, minimaler URL-Pfad der App, einmalig aus
+  // dem initialen Seitenaufruf gelesen (siehe vercel.json für den nötigen
+  // SPA-Fallback, damit ein kalt geöffneter Link nicht 404 wirft).
+  const geteiltPfad = useMemo(() => {
+    const treffer = window.location.pathname.match(/^\/geteilt\/(set|ordner)\/([^/]+)\/?$/);
+    return treffer ? { typ: treffer[1] as "set" | "ordner", token: treffer[2] } : null;
+  }, []);
 
   const [sets, setSets] = useState<KartenSet[]>([]);
   const [karten, setKarten] = useState<Karte[]>([]);
@@ -57,6 +80,7 @@ function App() {
   const [lernBereich, setLernBereich] = useState<LernBereich | null>(null);
   const [hintergrund, setHintergrundState] = useState<Hintergrund>(getHintergrund());
   const [karteFaelltZurueck, setKarteFaelltZurueckState] = useState(true);
+  const [wechselZuEmail, setWechselZuEmail] = useState<string | null>(null);
 
   useEffect(() => {
     document.body.dataset.hintergrund = hintergrund;
@@ -135,6 +159,14 @@ function App() {
   function hintergrundWaehlen(wert: Hintergrund) {
     setHintergrundState(wert);
     speichereHintergrund(wert);
+  }
+
+  // Schnellwechsel zwischen Konten (z. B. eigenes ↔ das des Bruders): meldet
+  // ab und zeigt die Anmeldung mit vorausgefüllter E-Mail — bewusst kein
+  // Cache der Session/des Passworts, das Passwort wird jedes Mal neu verlangt.
+  function kontoWechseln(email: string) {
+    setWechselZuEmail(email);
+    supabase.auth.signOut();
   }
 
   function karteFaelltZurueckAendern(wert: boolean) {
@@ -243,6 +275,47 @@ function App() {
         setSets(vorherSets);
       },
     );
+  }
+
+  // --- Teilen -------------------------------------------------------
+
+  async function setTeilen(setId: string): Promise<string> {
+    const set = sets.find((s) => s.id === setId);
+    if (!set) throw new Error("Set nicht gefunden");
+    const token = await erstelleSetFreigabe(set, karten);
+    return teilenLink("set", token);
+  }
+
+  async function ordnerTeilen(ordnerId: string): Promise<string> {
+    const zielOrdner = ordner.find((o) => o.id === ordnerId);
+    if (!zielOrdner) throw new Error("Ordner nicht gefunden");
+    const token = await erstelleOrdnerFreigabe(zielOrdner, ordner, sets, karten);
+    return teilenLink("ordner", token);
+  }
+
+  // Baut einen geteilten Ordnerbaum als neue, eigene Ordner/Sets/Karten nach.
+  // Bewusst NICHT über die optimistischen ordnerAnlegen/setErstellen-Helfer
+  // (die feuern ihren Speicher-Call unawaited im Hintergrund ab) — hier
+  // müssen Kinder auf die tatsächlich abgeschlossene Persistierung ihres
+  // Eltern-Ordners warten, sonst kann der Sets-Insert per Fremdschlüssel
+  // fehlschlagen, weil die Ordner-Zeile serverseitig noch nicht existiert
+  // (live reproduziert: der Ordner kam an, das enthaltene Set verschwand
+  // wieder durchs Rollback).
+  async function ordnerFreigabeUebernehmen(knoten: GeteilterOrdnerKnoten, parentId: string | null): Promise<void> {
+    const neuerOrdner = baueOrdner(knoten.name, parentId);
+    setOrdner((o) => [...o, neuerOrdner]);
+    await ordnerInsertieren(neuerOrdner);
+
+    for (const set of knoten.sets) {
+      const { set: neuesSet, karten: neueKarten } = baueNeuesSet(set.name, set.karten, neuerOrdner.id);
+      setSets((s) => [...s, neuesSet]);
+      setKarten((k) => [...k, ...neueKarten]);
+      await setBundleSpeichern(neuesSet, neueKarten);
+    }
+
+    for (const kind of knoten.unterordner) {
+      await ordnerFreigabeUebernehmen(kind, neuerOrdner.id);
+    }
   }
 
   // --- Karten-Aktionen --------------------------------------------
@@ -375,12 +448,27 @@ function App() {
     );
   }
 
+  // Vor allem anderen: ein Freigabe-Link funktioniert unabhängig vom
+  // Login-Zustand (auch ohne Konto lesbar) und unabhängig von den sonst
+  // geladenen Bibliotheksdaten.
+  if (geteiltPfad) {
+    return (
+      <SharedRoute
+        geteiltTyp={geteiltPfad.typ}
+        token={geteiltPfad.token}
+        session={session}
+        onSetUebernehmen={(set: GeteiltesSet) => setErstellen({ name: set.name }, set.karten, null)}
+        onOrdnerUebernehmen={(knoten: GeteilterOrdnerKnoten) => ordnerFreigabeUebernehmen(knoten, null)}
+      />
+    );
+  }
+
   if (istWiederherstellung) {
     return <PasswortZuruecksetzenScreen onFertig={wiederherstellungAbschliessen} />;
   }
 
   if (!session) {
-    return <LoginScreen />;
+    return <LoginScreen initialEmail={wechselZuEmail ?? undefined} />;
   }
 
   if (datenZustand !== "bereit") {
@@ -444,12 +532,14 @@ function App() {
           onOrdnerErstellen={ordnerAnlegen}
           onOrdnerUmbenennen={ordnerUmbenennen}
           onOrdnerLoeschen={ordnerEntfernen}
+          onOrdnerTeilen={ordnerTeilen}
           onKarteErstellen={karteErstellen}
           onKartenImportieren={kartenImportieren}
           onKarteAendern={karteAendern}
           onKarteLoeschen={karteEntfernen}
           onWoerterStarten={woerterStarten}
           onLernen={lernenStarten}
+          onSetTeilen={setTeilen}
         />
       )}
 
@@ -470,6 +560,9 @@ function App() {
           onHintergrund={hintergrundWaehlen}
           karteFaelltZurueck={karteFaelltZurueck}
           onKarteFaelltZurueck={karteFaelltZurueckAendern}
+          kontoEmail={session.user.email}
+          andereKonten={letzteKonten().filter((e) => e !== session.user.email)}
+          onKontoWechseln={kontoWechseln}
           onExport={exportiereBackup}
           onImport={importiereBackup}
           onImportUebernommen={backupUebernehmen}

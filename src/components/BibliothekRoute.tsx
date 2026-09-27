@@ -8,6 +8,7 @@ import { KarteForm, type KarteFormDaten } from "./KarteForm";
 import { KartenVerwaltung } from "./KartenVerwaltung";
 import { SetForm } from "./SetForm";
 import { SetUebeSeite } from "./SetUebeSeite";
+import { TeilenPanel } from "./TeilenPanel";
 
 interface Props {
   sets: KartenSet[];
@@ -16,9 +17,11 @@ interface Props {
   onSetErstellen: (eingabe: SetEingabe, paare: KartePaar[], ordnerId?: string | null) => KartenSet;
   onSetAktualisieren: (setId: string, updates: Partial<KartenSet>) => void;
   onSetLoeschen: (setId: string) => void;
+  onSetTeilen: (setId: string) => Promise<string>;
   onOrdnerErstellen: (eingabe: OrdnerEingabe) => Ordner;
   onOrdnerUmbenennen: (ordnerId: string, name: string) => void;
   onOrdnerLoeschen: (ordnerId: string) => void;
+  onOrdnerTeilen: (ordnerId: string) => Promise<string>;
   onKarteErstellen: (
     setId: string,
     daten: { vorderseite: string; rueckseite: string; bildBase64?: string },
@@ -161,6 +164,7 @@ export function BibliothekRoute(props: Props) {
         onVerwalten={() => setView({ typ: "verwalten", setId: set.id })}
         onLernen={() => props.onLernen({ typ: "set", setId: set.id })}
         onBoxUeben={(box) => props.onLernen({ typ: "box", setId: set.id, box })}
+        onTeilen={() => props.onSetTeilen(set.id)}
       />
     );
   }
@@ -203,7 +207,7 @@ export function BibliothekRoute(props: Props) {
         </p>
       )}
 
-      <div className="zeile-zwischen">
+      <div className="zeile-zwischen" style={{ marginBottom: aktuellerOrdner ? undefined : "1.25rem" }}>
         {ordnerUmbenennenId === aktuellerOrdner?.id ? (
           <div className="field" style={{ flex: 1, marginBottom: 0, marginRight: "0.75rem" }}>
             <input
@@ -259,6 +263,12 @@ export function BibliothekRoute(props: Props) {
               </button>
             </>
           )}
+        </div>
+      )}
+
+      {aktuellerOrdner && (
+        <div style={{ marginBottom: "1rem" }}>
+          <TeilenPanel onTeilen={() => props.onOrdnerTeilen(aktuellerOrdner.id)} label="🔗 Ordner teilen" />
         </div>
       )}
 

@@ -10,6 +10,7 @@ import type { BoxNummer, DatenBestand, Karte, KartenSet, Ordner } from "./types"
 const KEYS = {
   hintergrund: "ichlerne.hintergrund",
   migrationAngeboten: "ichlerne.migrationAngeboten",
+  letzteKonten: "ichlerne.letzteKonten",
 } as const;
 
 // --- Ordner --------------------------------------------------------------
@@ -199,6 +200,25 @@ export function getHintergrund(): Hintergrund {
 
 export function setHintergrund(wert: Hintergrund): void {
   localStorage.setItem(KEYS.hintergrund, wert);
+}
+
+// Zuletzt erfolgreich genutzte E-Mail-Adressen auf diesem Gerät (max. 5,
+// neueste zuerst) — nur für den Konto-Schnellwechsel in den Einstellungen.
+// Bewusst NUR die E-Mail, nie ein Passwort oder Session-Token: Ein
+// Schnellwechsel meldet ab und zeigt die Anmeldung mit vorausgefüllter
+// E-Mail, verlangt aber wieder das Passwort — kein Cache von Zugangsdaten.
+export function letzteKonten(): string[] {
+  try {
+    const roh = localStorage.getItem(KEYS.letzteKonten);
+    return roh ? (JSON.parse(roh) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function kontoGemerkt(email: string): void {
+  const bisherige = letzteKonten().filter((e) => e !== email);
+  localStorage.setItem(KEYS.letzteKonten, JSON.stringify([email, ...bisherige].slice(0, 5)));
 }
 
 // Steuert die einmalige "lokale Daten ins Konto übernehmen?"-Nachfrage nach

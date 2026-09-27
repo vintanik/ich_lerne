@@ -10,6 +10,9 @@ interface Props {
   onHintergrund: (wert: Hintergrund) => void;
   karteFaelltZurueck: boolean;
   onKarteFaelltZurueck: (wert: boolean) => void;
+  kontoEmail?: string;
+  andereKonten: string[];
+  onKontoWechseln: (email: string) => void;
   onExport: () => Promise<string>;
   onImport: (json: string) => Promise<DatenBestand>;
   onImportUebernommen: (bestand: DatenBestand) => void;
@@ -21,6 +24,9 @@ export function EinstellungenRoute({
   onHintergrund,
   karteFaelltZurueck,
   onKarteFaelltZurueck,
+  kontoEmail,
+  andereKonten,
+  onKontoWechseln,
   onExport,
   onImport,
   onImportUebernommen,
@@ -94,11 +100,31 @@ export function EinstellungenRoute({
 
       <div className="card accent-salbei">
         <h3>Konto</h3>
+        {kontoEmail && (
+          <p className="note" style={{ marginTop: 0 }}>
+            Angemeldet als {kontoEmail}
+          </p>
+        )}
         <div className="btn-row">
           <button className="btn salbei secondary" onClick={() => supabase.auth.signOut()}>
             Abmelden
           </button>
         </div>
+
+        {andereKonten.length > 0 && (
+          <>
+            <p className="note" style={{ marginTop: "0.9rem", marginBottom: "0.4rem" }}>
+              Schnellwechsel — meldet ab und verlangt das Passwort erneut:
+            </p>
+            <div className="btn-row">
+              {andereKonten.map((email) => (
+                <button key={email} className="btn secondary klein" onClick={() => onKontoWechseln(email)}>
+                  → {email}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <div className="ornament">

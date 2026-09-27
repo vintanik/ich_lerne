@@ -5,6 +5,7 @@ import type { BoxNummer, Karte, KartenSet, Ordner } from "../types";
 import { BoxBalken } from "./BoxBalken";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { NeueWoerterPanel } from "./NeueWoerterPanel";
+import { TeilenPanel } from "./TeilenPanel";
 
 interface Props {
   set: KartenSet;
@@ -18,6 +19,7 @@ interface Props {
   onVerwalten: () => void;
   onLernen: () => void;
   onBoxUeben: (box: BoxNummer) => void;
+  onTeilen: () => Promise<string>;
 }
 
 const KEIN_ORDNER = "__kein-ordner__";
@@ -34,6 +36,7 @@ export function SetUebeSeite({
   onVerwalten,
   onLernen,
   onBoxUeben,
+  onTeilen,
 }: Props) {
   const [nameBearbeiten, setNameBearbeiten] = useState(false);
   const [nameEntwurf, setNameEntwurf] = useState(set.name);
@@ -112,6 +115,10 @@ export function SetUebeSeite({
             </option>
           ))}
         </select>
+      </div>
+
+      <div style={{ marginBottom: "0.75rem" }}>
+        <TeilenPanel onTeilen={onTeilen} label="🔗 Set teilen" />
       </div>
 
       <p className="note">

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "../supabaseClient";
+import { kontoGemerkt } from "../storage";
 
 type Modus = "anmelden" | "registrieren" | "passwort-vergessen";
 
@@ -10,9 +11,18 @@ type Zustand =
   | { typ: "reset-gesendet"; email: string }
   | { typ: "fehler"; meldung: string };
 
-export function LoginScreen() {
-  const [modus, setModus] = useState<Modus>("anmelden");
-  const [email, setEmail] = useState("");
+interface Props {
+  /** Für den Konto-Schnellwechsel: E-Mail schon ausgefüllt, Fokus aufs Passwort. */
+  initialEmail?: string;
+  /** Für den Einstieg über einen Freigabe-Link: direkt im Registrieren-Tab starten. */
+  initialModus?: Modus;
+  /** Eingebettet in eine andere Seite (z. B. SharedRoute) — ohne eigenes app-shell/Header. */
+  eingebettet?: boolean;
+}
+
+export function LoginScreen({ initialEmail, initialModus, eingebettet }: Props) {
+  const [modus, setModus] = useState<Modus>(initialModus ?? "anmelden");
+  const [email, setEmail] = useState(initialEmail ?? "");
   const [passwort, setPasswort] = useState("");
   const [zustand, setZustand] = useState<Zustand>({ typ: "eingabe" });
 
@@ -57,6 +67,8 @@ export function LoginScreen() {
       const { error } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password: passwort });
       if (error) {
         setZustand({ typ: "fehler", meldung: error.message });
+      } else {
+        kontoGemerkt(trimmedEmail);
       }
       // Bei Erfolg übernimmt useSession über onAuthStateChange automatisch.
     }
@@ -64,19 +76,9 @@ export function LoginScreen() {
 
   const zeigtBestaetigung = zustand.typ === "registriert-bestaetigung-noetig" || zustand.typ === "reset-gesendet";
 
-  return (
-    <div className="app-shell">
-      <header className="brand-header">
-        <div className="brand-name">Ich lerne</div>
-        <div className="brand-sub">Karteikarten nach Leitner</div>
-      </header>
-
-      <div className="ornament">
-        <span className="dot" />
-      </div>
-
-      <div className="card accent-bordeaux">
-        {zustand.typ === "registriert-bestaetigung-noetig" && (
+  const inhalt = (
+    <div className="card accent-bordeaux">
+      {zustand.typ === "registriert-bestaetigung-noetig" && (
           <>
             <h2>Fast geschafft</h2>
             <p>
@@ -131,7 +133,7 @@ export function LoginScreen() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="name@beispiel.ch"
                   required
-                  autoFocus
+                  autoFocus={!initialEmail}
                 />
               </div>
 
@@ -144,6 +146,7 @@ export function LoginScreen() {
                     value={passwort}
                     onChange={(e) => setPasswort(e.target.value)}
                     placeholder="Mindestens 6 Zeichen"
+                    autoFocus={!!initialEmail}
                     minLength={6}
                     required
                   />
@@ -183,7 +186,23 @@ export function LoginScreen() {
             </p>
           </>
         )}
+    </div>
+  );
+
+  if (eingebettet) return inhalt;
+
+  return (
+    <div className="app-shell">
+      <header className="brand-header">
+        <div className="brand-name">Ich lerne</div>
+        <div className="brand-sub">Karteikarten nach Leitner</div>
+      </header>
+
+      <div className="ornament">
+        <span className="dot" />
       </div>
+
+      {inhalt}
     </div>
   );
 }
