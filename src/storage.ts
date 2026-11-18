@@ -175,19 +175,47 @@ export async function einstellungenSpeichern(karteFaelltZurueck: boolean): Promi
 
 // --- Laden ---------------------------------------------------------------
 
+const SEITENGROESSE = 1000;
+
+/**
+ * Liest ALLE Zeilen einer Tabelle seitenweise. Ein einzelnes select() liefert
+ * serverseitig höchstens 1000 Zeilen (PostgREST-Grenze) und schneidet den Rest
+ * STILL ab — ohne Fehler, die App hielte einen unvollständigen Bestand für
+ * vollständig (und ein Backup würde beim Wiederherstellen den Rest löschen).
+ * Stabile Sortierung ist nötig, damit zwischen den Seiten nichts doppelt oder
+ * gar nicht geliefert wird.
+ */
+export async function ladeAlleZeilen<T>(
+  tabelle: string,
+  spalten: string,
+  sortierung: string[],
+  seitengroesse: number = SEITENGROESSE,
+): Promise<T[]> {
+  const alle: T[] = [];
+  let gesamt = Infinity;
+  while (alle.length < gesamt) {
+    let abfrage = supabase.from(tabelle).select(spalten, { count: "exact" });
+    for (const spalte of sortierung) abfrage = abfrage.order(spalte, { ascending: true });
+    const { data, error, count } = await abfrage.range(alle.length, alle.length + seitengroesse - 1);
+    if (error) throw error;
+    if (count !== null) gesamt = count;
+    const zeilen = (data ?? []) as unknown as T[];
+    if (zeilen.length === 0) break;
+    alle.push(...zeilen);
+  }
+  return alle;
+}
+
 export async function ladeBestand(): Promise<DatenBestand> {
-  const [ordnerRes, setsRes, kartenRes] = await Promise.all([
-    supabase.from("ordner").select(ORDNER_SELECT).order("erstellt_am", { ascending: true }),
-    supabase.from("sets").select(SET_SELECT).order("erstellt_am", { ascending: true }),
-    supabase.from("karten").select(KARTE_SELECT),
+  const [ordnerZeilen, setZeilen, kartenZeilen] = await Promise.all([
+    ladeAlleZeilen<OrdnerZeile>("ordner", ORDNER_SELECT, ["erstellt_am", "id"]),
+    ladeAlleZeilen<SetZeile>("sets", SET_SELECT, ["erstellt_am", "id"]),
+    ladeAlleZeilen<KarteZeile>("karten", KARTE_SELECT, ["id"]),
   ]);
-  if (ordnerRes.error) throw ordnerRes.error;
-  if (setsRes.error) throw setsRes.error;
-  if (kartenRes.error) throw kartenRes.error;
   return {
-    ordner: (ordnerRes.data as OrdnerZeile[]).map(zeileZuOrdner),
-    sets: (setsRes.data as SetZeile[]).map(zeileZuSet),
-    karten: (kartenRes.data as KarteZeile[]).map(zeileZuKarte),
+    ordner: ordnerZeilen.map(zeileZuOrdner),
+    sets: setZeilen.map(zeileZuSet),
+    karten: kartenZeilen.map(zeileZuKarte),
   };
 }
 
@@ -250,21 +278,18 @@ export function setMigrationAngeboten(): void {
 // Löschen+Neueinfügen derselben Zeilen, wie bei "Ich koche".
 
 export async function exportiereBackup(): Promise<string> {
-  const [ordnerRes, setsRes, kartenRes] = await Promise.all([
-    supabase.from("ordner").select("*"),
-    supabase.from("sets").select("*"),
-    supabase.from("karten").select("*"),
+  const [ordner, sets, karten] = await Promise.all([
+    ladeAlleZeilen<unknown>("ordner", "*", ["erstellt_am", "id"]),
+    ladeAlleZeilen<unknown>("sets", "*", ["erstellt_am", "id"]),
+    ladeAlleZeilen<unknown>("karten", "*", ["id"]),
   ]);
-  if (ordnerRes.error) throw ordnerRes.error;
-  if (setsRes.error) throw setsRes.error;
-  if (kartenRes.error) throw kartenRes.error;
 
   return JSON.stringify(
     {
       app: "ich-lerne",
       version: 4,
       erstelltAm: new Date().toISOString(),
-      tabellen: { ordner: ordnerRes.data, sets: setsRes.data, karten: kartenRes.data },
+      tabellen: { ordner, sets, karten },
     },
     null,
     2,
@@ -287,6 +312,17 @@ export async function importiereBackup(json: string): Promise<DatenBestand> {
   const ordnerZeilen = (Array.isArray(tabellen.ordner) ? tabellen.ordner : []) as OrdnerZeile[];
   const setZeilen = tabellen.sets as SetZeile[];
   const kartenZeilen = tabellen.karten as KarteZeile[];
+
+  // Vor dem Löschen prüfen: Zeilen eines FREMDEN Kontos würde die Datenbank
+  // beim Einfügen ablehnen — nach dem Löschen wäre dann alles weg und nichts
+  // zurückgespielt. Lieber vorher mit klarer Meldung abbrechen.
+  const { data: nutzerDaten, error: nutzerFehler } = await supabase.auth.getUser();
+  if (nutzerFehler || !nutzerDaten.user) throw nutzerFehler ?? new Error("Nicht angemeldet");
+  const fremd = [...ordnerZeilen, ...setZeilen, ...kartenZeilen].some((z) => {
+    const besitzer = (z as unknown as { user_id?: string }).user_id;
+    return besitzer !== undefined && besitzer !== nutzerDaten.user.id;
+  });
+  if (fremd) throw new Error("Dieses Backup gehört zu einem anderen Konto");
 
   const { error: setsDelError } = await supabase.from("sets").delete().not("id", "is", null);
   if (setsDelError) throw setsDelError;

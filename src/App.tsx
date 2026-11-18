@@ -3,6 +3,7 @@ import { usePasswortWiederherstellung } from "./auth/usePasswortWiederherstellun
 import { useSession } from "./auth/useSession";
 import { hatLokaleDaten } from "./cloudMigration";
 import { baueKarten, baueNeuesSet, heuteIso, karteStarten, nachAntwort } from "./leitner";
+import { mitWiederholung } from "./mitWiederholung";
 import { baueOrdner } from "./ordner";
 import { erstelleOrdnerFreigabe, erstelleSetFreigabe, teilenLink } from "./sharing";
 import {
@@ -97,7 +98,7 @@ function App() {
     if (!userId) return;
     let abgebrochen = false;
     setDatenZustand("laedt");
-    ladeBestand()
+    mitWiederholung(ladeBestand, () => abgebrochen)
       .then((bestand) => {
         if (abgebrochen) return;
         setSets(bestand.sets);
@@ -178,7 +179,7 @@ function App() {
   // Cache der Session/des Passworts, das Passwort wird jedes Mal neu verlangt.
   function kontoWechseln(email: string) {
     setWechselZuEmail(email);
-    supabase.auth.signOut();
+    supabase.auth.signOut({ scope: "local" });
   }
 
   function karteFaelltZurueckAendern(wert: boolean) {

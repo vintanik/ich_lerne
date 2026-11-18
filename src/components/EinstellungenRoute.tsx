@@ -83,8 +83,12 @@ export function EinstellungenRoute({
     try {
       const bestand = await onImport(ausstehend);
       onImportUebernommen(bestand);
-    } catch {
-      setFehler("Die Wiederherstellung ist fehlgeschlagen — Datei prüfen.");
+    } catch (e) {
+      setFehler(
+        e instanceof Error && e.message.startsWith("Dieses Backup")
+          ? `${e.message} — es wurde nichts gelöscht.`
+          : "Die Wiederherstellung ist fehlgeschlagen — Datei prüfen.",
+      );
       setAusstehend(null);
       setStelltWiederHer(false);
     }
@@ -108,7 +112,7 @@ export function EinstellungenRoute({
           </p>
         )}
         <div className="btn-row">
-          <button className="btn salbei secondary" onClick={() => supabase.auth.signOut()}>
+          <button className="btn salbei secondary" onClick={() => supabase.auth.signOut({ scope: "local" })}>
             Abmelden
           </button>
         </div>
